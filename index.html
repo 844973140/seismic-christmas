@@ -315,6 +315,7 @@
             document.body.appendChild(renderer.domElement);
 
             const renderScene = new RenderPass(scene, camera);
+            // [调整] 保持之前的 Bloom 强度
             const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
             bloomPass.threshold = 0.5; bloomPass.strength = 0.35; bloomPass.radius = 0.5;
 
@@ -521,8 +522,8 @@
             const geo = new THREE.BoxGeometry(3.2, 2.2, 0.1);
             const goldSide = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 1.0, roughness: 0.15, emissive: 0xaa7700, emissiveIntensity: 0.2 });
             const frontMat = new THREE.MeshBasicMaterial({ map: frontTex });
-            // [修复] 背面保底色改为深墨绿，防止加载失败时太亮
-            const backMat = new THREE.MeshBasicMaterial({ map: backTex, color: 0x051105 });
+            // [紧急修复] 背面底色改回白色，确保图片显示
+            const backMat = new THREE.MeshBasicMaterial({ map: backTex, color: 0xffffff });
             
             const frame = new THREE.Mesh(geo, goldSide);
             const frontMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), frontMat); frontMesh.position.z = 0.06;
@@ -556,21 +557,19 @@
             }
         }
 
-        // [核心修改] V3.1 质感修复版
+        // [核心修改] 保持正面深色渐变，背面已在 createCardMesh 中改回白色
         function createCardTexture(msg, name, isFront, avatarUrl = null, bgArtId = 1) {
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 340; 
             const ctx = canvas.getContext('2d');
             
-            // [修复] 使用高级的深绿色径向渐变代替死黑底
-            // 这样即使图片没加载出来，也是一个有质感的墨绿色卡片
             if(isFront) {
                 const grd = ctx.createRadialGradient(256, 170, 50, 256, 170, 350);
-                grd.addColorStop(0, '#1a2a1a'); // 中心稍亮
-                grd.addColorStop(1, '#020a02'); // 边缘深墨绿/黑
+                grd.addColorStop(0, '#1a2a1a'); 
+                grd.addColorStop(1, '#020a02'); 
                 ctx.fillStyle = grd;
             } else {
-                ctx.fillStyle = '#000000'; 
+                ctx.fillStyle = '#ffffff'; 
             }
             ctx.fillRect(0,0,512,340);
 
@@ -599,9 +598,8 @@
                     ctx.fillText(name, 140, 90);
                     ctx.shadowBlur=0;
 
-                    // [修复] 加重文字投影，确保清晰
                     ctx.fillStyle = '#ffffff'; ctx.font = 'italic bold 34px "Times New Roman", serif'; ctx.textAlign = 'center'; 
-                    ctx.shadowColor="#000000"; ctx.shadowBlur=6; ctx.shadowOffsetX=3; ctx.shadowOffsetY=3;
+                    ctx.shadowColor="black"; ctx.shadowBlur=6; ctx.shadowOffsetX=3; ctx.shadowOffsetY=3;
                     wrapText(ctx, msg, 256, 180, 440, 48);
                 }
                 tex.needsUpdate = true;
@@ -615,7 +613,6 @@
                 
                 bgImg.onload = () => {
                     ctx.save();
-                    // [调整] 透明度提高到 40%，底纹更清晰
                     ctx.globalAlpha = 0.4; 
                     ctx.drawImage(bgImg, 0, 0, 512, 340);
                     ctx.restore();
@@ -632,7 +629,6 @@
                         ctx.restore();
                         drawContent();
                     };
-                    // 如果图片都加载失败，就只显示渐变底色和文字
                     bgImg2.onerror = () => { drawContent(); }; 
                 };
             }
