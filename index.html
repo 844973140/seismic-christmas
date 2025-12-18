@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SEISMIC - Christmas Official</title>
-    <script src="//code.bdstatic.com/npm/leancloud-storage@4.15.0/dist/av-min.js"></script>
+    <script src="https://registry.npmmirror.com/@supabase/supabase-js/2.39.3/files/dist/umd/supabase.js"></script>
     <style>
         body { 
             margin: 0; overflow: hidden; background-color: #000; 
@@ -199,29 +199,32 @@
         import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
         import TWEEN from 'three/addons/libs/tween.module.js';
 
-        // --- LEANCLOUD INIT ---
-        // ！！！请在这里填入你的 App ID 和 App Key ！！！
-        const APP_ID = 'gbXTsnNbrlGI3rW0CljmeAzl-MdYXbMMI'; 
-        const APP_KEY = 'ytS7S0T6AyFxnHr4o4087O65';
-        
-        // 简单判断是否填了 ID，防止报错
-        let AV_READY = false;
-        if (APP_ID !== 'YOUR_APP_ID' && typeof AV !== 'undefined') {
-            AV.init({ appId: APP_ID, appKey: APP_KEY });
-            AV_READY = true;
+        // =========================================================
+        // 
+        // 注册 Supabase.com -> New Project -> Settings -> API -> 获取 URL 和 Key
+        // =========================================================
+        const SUPABASE_URL = 'https://btqjjzmdbtuhxppvvqgr.supabase.co'; // 例如 https://xyz.supabase.co
+        const SUPABASE_KEY = 'sb_publishable_6caaDPXJ_DFHOqt2JOLyfQ_3HCVcFf7';
+
+        let supabase = null;
+        let DB_READY = false;
+
+        // 初始化
+        if (SUPABASE_URL !== '你的_Project_URL' && window.supabase) {
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                DB_READY = true;
+                console.log("Supabase Client Init Success");
+            } catch(e) { console.error("DB Init Failed", e); }
         } else {
-            console.warn("LeanCloud AppID/Key not set. Using local mode.");
+            console.warn("未配置 Supabase，进入单机模式");
         }
 
         const CONFIG = {
-            goldCount: 500,      
-            silverCount: 500, 
-            gemCount: 300,       
-            treeHeight: 85,
-            maxRadius: 38,
-            cardScaleTree: 0.45, 
-            artCount: 29,         // 确保你 assets 文件夹里有 art_1.jpg 到 art_29.jpg (或者把这个数字改成你实际图片的数量)
-            maxCardsDisplay: 300  // 最大展示数量
+            goldCount: 500, silverCount: 500, gemCount: 300,       
+            treeHeight: 85, maxRadius: 38, cardScaleTree: 0.45, 
+            artCount: 29, 
+            maxCardsDisplay: 300 
         };
 
         const STATE = { TREE: 'tree', SCATTER: 'scatter', HERO: 'hero' };
@@ -232,9 +235,7 @@
         let cardsGroup = new THREE.Group();
         let backgroundGroup = new THREE.Group(); 
         let dustSystem;
-        
         let currentUserCard = null; 
-        let currentUserName = ""; // Store local user name
         const allObjectsData = []; 
         let loadingManager; 
         const textureLoader = new THREE.TextureLoader();
@@ -264,11 +265,8 @@
         };
 
         window.findMyCard = function() {
-            if (currentUserCard) {
-                activateHeroMode(currentUserCard);
-            } else {
-                alert("You haven't posted a card yet!");
-            }
+            if (currentUserCard) activateHeroMode(currentUserCard); 
+            else alert("You haven't posted a wish yet!");
         };
 
         window.saveCardImage = function() {
@@ -278,7 +276,6 @@
             compositeCanvas.width = canvas3D.width;
             compositeCanvas.height = canvas3D.height;
             const ctx = compositeCanvas.getContext('2d');
-            
             ctx.drawImage(canvas3D, 0, 0);
             
             const logo = document.getElementById('logo-img');
@@ -289,15 +286,12 @@
                 const drawHeight = rect.height * pixelRatio;
                 const drawX = (compositeCanvas.width - drawWidth) / 2;
                 const drawY = 20 * pixelRatio; 
-                try {
-                    ctx.drawImage(logo, drawX, drawY, drawWidth, drawHeight);
-                } catch(e) {}
+                try { ctx.drawImage(logo, drawX, drawY, drawWidth, drawHeight); } catch(e) {}
             }
 
-            const dataURL = compositeCanvas.toDataURL('image/png');
             const link = document.createElement('a');
-            link.download = `Seismic_Wish_${currentUserName}.png`;
-            link.href = dataURL;
+            link.download = `Seismic_Wish.png`;
+            link.href = compositeCanvas.toDataURL('image/png');
             link.click();
         };
 
@@ -308,17 +302,17 @@
                 document.getElementById('progress-bar').style.width = progress + '%';
             };
             loadingManager.onLoad = function() {
-                // 等待纹理加载完毕，但卡片数据通过 fetchCards 异步获取
                 setTimeout(() => {
-                    document.getElementById('progress-container').style.display = 'none';
-                    document.getElementById('loading-status').innerText = "World Generated";
-                    // 尝试获取云端卡片后再显示入口
-                    fetchCloudCards().then(() => {
-                         document.getElementById('start-text').style.display = 'block';
-                         document.getElementById('loading-status').style.display = 'none';
+                    document.getElementById('loading-status').innerText = "Reading Wishes...";
+                    // 尝试获取云端卡片
+                    fetchCloudCards().finally(() => {
+                        document.getElementById('progress-container').style.display = 'none';
+                        document.getElementById('loading-status').style.display = 'none';
+                        document.getElementById('start-text').style.display = 'block';
                     });
                 }, 500);
             };
+            loadingManager.onError = function(url) { console.warn("Asset load failed:", url); };
             textureLoader.manager = loadingManager;
 
             scene = new THREE.Scene();
@@ -331,8 +325,6 @@
             renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance", preserveDrawingBuffer: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.0;
             document.body.appendChild(renderer.domElement);
 
             const renderScene = new RenderPass(scene, camera);
@@ -343,8 +335,7 @@
             composer.addPass(renderScene);
             composer.addPass(bloomPass);
 
-            const pmremGenerator = new THREE.PMREMGenerator(renderer);
-            scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+            scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
             
             const ambient = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambient);
             const spotLight = new THREE.SpotLight(0xffddaa, 150); spotLight.position.set(30, 60, 50); scene.add(spotLight);
@@ -363,47 +354,52 @@
             animate();
         }
 
-        // --- CLOUD DATA LOGIC ---
-
+        // --- 核心逻辑：获取云端数据 (Supabase) ---
         async function fetchCloudCards() {
-            if (!AV_READY) {
-                // 如果没配云端，就读本地作为演示
-                const savedData = localStorage.getItem('seismic_card');
-                if(savedData) {
-                    const { name, msg } = JSON.parse(savedData);
+            // 1. 本地
+            const localSaved = localStorage.getItem('seismic_card');
+            const localId = localStorage.getItem('seismic_card_id');
+            if(localSaved) {
+                try {
+                    const { name, msg } = JSON.parse(localSaved);
                     createCardMesh(msg, name, true, 0, 1, null);
-                }
-                return;
+                } catch(e){}
             }
 
-            document.getElementById('loading-status').innerText = "Downloading Wishes...";
-            
+            if (!DB_READY) return;
+
+            // 2. 云端
             try {
-                const query = new AV.Query('Wishes');
-                query.descending('createdAt'); // 获取最新的
-                query.limit(500); // 抓取最近的500条
-                const results = await query.find();
-                
-                let cardsToDisplay = results;
-                
-                // 如果超过300条，随机打乱取300条，或者直接取最新的300条
-                // 这里为了性能和逻辑简单，我们取随机打乱后的300条（如果总数>300）
-                if (results.length > CONFIG.maxCardsDisplay) {
-                     cardsToDisplay = results.sort(() => 0.5 - Math.random()).slice(0, CONFIG.maxCardsDisplay);
+                // 3秒超时
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("Timeout")), 3000)
+                );
+
+                const dbQuery = supabase
+                    .from('wishes')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(500);
+
+                const { data, error } = await Promise.race([dbQuery, timeoutPromise]);
+
+                if (error) throw error;
+                if (!data) return;
+
+                let cardsToDisplay = data;
+                if (data.length > CONFIG.maxCardsDisplay) {
+                     cardsToDisplay = data.sort(() => 0.5 - Math.random()).slice(0, CONFIG.maxCardsDisplay);
                 }
 
-                // 检查本地是否有已提交的ID
-                const localId = localStorage.getItem('seismic_card_id');
-
-                cardsToDisplay.forEach((obj, i) => {
-                    const data = obj.attributes;
-                    const isMine = (obj.id === localId);
-                    createCardMesh(data.message, data.name, isMine, i, cardsToDisplay.length, data.avatarUrl);
-                    if (isMine) currentUserName = data.name;
+                const currentCount = cardsGroup.children.length;
+                cardsToDisplay.forEach((row, i) => {
+                    // 避免重复显示自己
+                    if (row.id == localId) return; 
+                    createCardMesh(row.message, row.name, false, i + currentCount, cardsToDisplay.length, row.avatar_url);
                 });
 
             } catch (error) {
-                console.error("Failed to fetch cards:", error);
+                console.log("Cloud fetch skipped:", error);
                 document.getElementById('loading-status').innerText = "Offline Mode";
             }
         }
@@ -415,49 +411,45 @@
             
             if(!msg) { alert("Please write a wish!"); return; }
 
-            btn.disabled = true;
-            btn.innerText = "SENDING...";
+            btn.disabled = true; btn.innerText = "SENDING...";
 
             let avatarUrl = null;
             let twitterHandle = nameInput.replace('@', '').trim();
-            // 简单的推特头像逻辑：如果名字里带@，尝试构建 URL
-            if (nameInput.includes('@') && twitterHandle.length > 0 && !twitterHandle.includes(' ')) {
+            if (nameInput.includes('@') && twitterHandle.length > 0) {
                 avatarUrl = `https://unavatar.io/twitter/${twitterHandle}`;
             }
 
-            if (AV_READY) {
-                // 保存到 LeanCloud
+            if (DB_READY) {
                 try {
-                    const Wish = AV.Object.extend('Wishes');
-                    const wish = new Wish();
-                    wish.set('name', nameInput);
-                    wish.set('message', msg);
-                    if(avatarUrl) wish.set('avatarUrl', avatarUrl);
-                    
-                    const savedWish = await wish.save();
-                    
-                    localStorage.setItem('seismic_card_id', savedWish.id);
-                    localStorage.setItem('seismic_card_name', nameInput);
-                    currentUserName = nameInput;
+                    const { data, error } = await supabase
+                        .from('wishes')
+                        .insert([
+                            { name: nameInput, message: msg, avatar_url: avatarUrl }
+                        ])
+                        .select(); // 返回插入的数据以便获取ID
 
-                    // 创建到场景中
-                    const total = cardsGroup.children.length + 1;
-                    createCardMesh(msg, nameInput, true, 0, 1, avatarUrl);
+                    if (error) throw error;
                     
-                    // 清空输入框
+                    if (data && data.length > 0) {
+                        const savedWish = data[0];
+                        localStorage.setItem('seismic_card_id', savedWish.id);
+                        localStorage.setItem('seismic_card', JSON.stringify({name: nameInput, msg}));
+                    }
+
+                    if(!currentUserCard) {
+                        createCardMesh(msg, nameInput, true, 0, 1, avatarUrl);
+                    }
+                    
                     document.getElementById('msg-input').value = "";
                     document.getElementById('user-name').value = "";
                     btn.innerText = "SENT!";
-                    
                 } catch (error) {
-                    alert("Network Error: " + error.message);
-                    btn.disabled = false;
-                    btn.innerText = "HANG THE CARD";
+                    alert("Submission Failed: " + error.message);
+                    btn.disabled = false; btn.innerText = "HANG THE CARD";
                 }
             } else {
-                // 本地模式 fallback
                 localStorage.setItem('seismic_card', JSON.stringify({name: nameInput, msg}));
-                createCardMesh(msg, nameInput, true, 0, 1, avatarUrl);
+                if(!currentUserCard) createCardMesh(msg, nameInput, true, 0, 1, avatarUrl);
                 btn.innerText = "SENT (LOCAL)";
             }
         };
@@ -472,17 +464,12 @@
                 posArray[i*3] = r * Math.sin(phi) * Math.cos(theta); posArray[i*3+1] = r * Math.sin(phi) * Math.sin(theta); posArray[i*3+2] = r * Math.cos(phi);
             }
             starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, transparent: true, opacity: 0.8 });
-            const starField = new THREE.Points(starsGeo, starsMat);
+            const starField = new THREE.Points(starsGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, transparent: true, opacity: 0.8 }));
             backgroundGroup.add(starField);
         }
 
         function toggleTreeState() {
-            if (currentState === STATE.SCATTER || currentState === STATE.HERO) {
-                forceToTree();
-            } else {
-                forceToScatter();
-            }
+            if (currentState === STATE.SCATTER || currentState === STATE.HERO) forceToTree(); else forceToScatter();
         }
 
         function forceToTree() {
@@ -504,7 +491,6 @@
         function forceToScatter() {
             currentState = STATE.SCATTER;
             new TWEEN.Tween(camera.position).to({x:0, y:40, z:200}, 2000).easing(TWEEN.Easing.Cubic.Out).start();
-            controls.autoRotate = true;
             allObjectsData.forEach(obj => {
                 new TWEEN.Tween(obj.mesh.position).to(obj.scatterPos, 2000).easing(TWEEN.Easing.Exponential.Out).start();
                 new TWEEN.Tween(obj.mesh.rotation).to({ x: Math.random()*Math.PI*2, y: Math.random()*Math.PI*2, z: Math.random()*Math.PI*2 }, 2000).start();
@@ -549,7 +535,7 @@
             let treePos;
             if (type === 'card') {
                 const y = ((index / total) - 0.5) * CONFIG.treeHeight;
-                const spiralTheta = index * 0.2; // 增加间距
+                const spiralTheta = index * 0.2; 
                 const rCard = (1 - (y + CONFIG.treeHeight/2)/CONFIG.treeHeight) * CONFIG.maxRadius + 6; 
                 treePos = new THREE.Vector3(rCard * Math.cos(spiralTheta), y, rCard * Math.sin(spiralTheta));
                 var treeRot = new THREE.Euler(0, -spiralTheta + Math.PI/2, 0);
@@ -587,25 +573,31 @@
         }
 
         function createCardMesh(msg, name, isUser, index, total, avatarUrl = null) {
-            // Random bg art
             const randomArtIdBack = Math.floor(Math.random() * CONFIG.artCount) + 1;
             const randomArtIdFront = Math.floor(Math.random() * CONFIG.artCount) + 1;
 
             const frontTex = createCardTexture(msg, name, true, avatarUrl, randomArtIdFront); 
             
-            const path1 = `assets/art_${randomArtIdBack}.jpg`; 
-            const path2 = `art_${randomArtIdBack}.jpg`; 
+            // 默认白色背面
+            const backMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
             
-            const backTex = textureLoader.load(path1, undefined, undefined, function ( err ) { 
-                    textureLoader.load(path2, (tex)=>{ backMesh.material.map = tex; backMesh.material.needsUpdate = true; });
-                }
-            );
-            backTex.colorSpace = THREE.SRGBColorSpace;
+            // 兼容路径
+            const path = `assets/art_${randomArtIdBack}.jpg`;
+            const pathRoot = `art_${randomArtIdBack}.jpg`;
+            
+            textureLoader.load(path, (tex)=>{
+                tex.colorSpace = THREE.SRGBColorSpace;
+                backMesh.material.map = tex; backMesh.material.needsUpdate = true;
+            }, undefined, ()=>{
+                textureLoader.load(pathRoot, (tex)=>{
+                     tex.colorSpace = THREE.SRGBColorSpace;
+                     backMesh.material.map = tex; backMesh.material.needsUpdate = true;
+                });
+            });
 
             const geo = new THREE.BoxGeometry(3.2, 2.2, 0.1);
             const goldSide = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 1.0, roughness: 0.15, emissive: 0xaa7700, emissiveIntensity: 0.2 });
             const frontMat = new THREE.MeshBasicMaterial({ map: frontTex });
-            const backMat = new THREE.MeshBasicMaterial({ map: backTex, color: 0xffffff });
             
             const frame = new THREE.Mesh(geo, goldSide);
             const frontMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), frontMat); frontMesh.position.z = 0.06;
@@ -618,7 +610,6 @@
             cardGroup.userData = { isCard: true };
             
             if(isUser && currentUserCard === null) {
-                // 如果是当前用户刚发的，做个动画
                 cardGroup.position.set(0, 100, 0); cardGroup.scale.set(0,0,0); currentUserCard = cardGroup;
                 const objData = { mesh: cardGroup, treePos: data.treePos, treeRot: data.treeRot, scatterPos: data.scatterPos, baseScale: CONFIG.cardScaleTree, phase: 0 };
                 allObjectsData.push(objData);
@@ -645,22 +636,16 @@
             canvas.width = 512; canvas.height = 340; 
             const ctx = canvas.getContext('2d');
             
-            // 默认深色背景
             const grd = ctx.createRadialGradient(256, 170, 50, 256, 170, 350);
             grd.addColorStop(0, '#1a2a1a'); grd.addColorStop(1, '#020a02'); 
-            ctx.fillStyle = grd;
-            ctx.fillRect(0,0,512,340);
+            ctx.fillStyle = grd; ctx.fillRect(0,0,512,340);
 
             const tex = new THREE.CanvasTexture(canvas); 
             tex.colorSpace = THREE.SRGBColorSpace;
 
-            // 绘制内容辅助函数
             function drawTextAndAvatar(loadedAvatarImg = null) {
-                // Border
-                ctx.lineWidth = 12; ctx.strokeStyle = '#b8860b'; 
-                ctx.strokeRect(6,6,500,328);
+                ctx.lineWidth = 12; ctx.strokeStyle = '#b8860b'; ctx.strokeRect(6,6,500,328);
 
-                // Avatar
                 if (loadedAvatarImg) {
                     ctx.save();
                     ctx.beginPath(); ctx.arc(80, 80, 45, 0, Math.PI*2); ctx.clip();
@@ -668,19 +653,16 @@
                     ctx.restore();
                     ctx.lineWidth=4; ctx.strokeStyle='#FFD700'; ctx.beginPath(); ctx.arc(80, 80, 45, 0, Math.PI*2); ctx.stroke();
                 } else {
-                    // Fallback Avatar (Initials)
                     ctx.save(); ctx.beginPath(); ctx.arc(80, 80, 45, 0, Math.PI*2); ctx.fillStyle = '#b8860b'; ctx.fill(); 
                     ctx.fillStyle = '#fff'; ctx.font='bold 40px Arial'; ctx.textAlign='center'; 
                     ctx.fillText(name.charAt(0).toUpperCase(), 80, 95); ctx.restore();
                 }
                 
-                // Name
                 ctx.fillStyle = '#FFD700'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'left'; 
                 ctx.shadowColor="black"; ctx.shadowBlur=4; ctx.shadowOffsetX=1; ctx.shadowOffsetY=1;
                 ctx.fillText(name, 140, 90);
                 ctx.shadowBlur=0;
 
-                // Message
                 ctx.fillStyle = '#ffffff'; ctx.font = 'italic bold 34px "Times New Roman", serif'; ctx.textAlign = 'center'; 
                 ctx.shadowColor="black"; ctx.shadowBlur=6; ctx.shadowOffsetX=3; ctx.shadowOffsetY=3;
                 wrapText(ctx, msg, 256, 180, 440, 48);
@@ -688,36 +670,31 @@
                 tex.needsUpdate = true;
             }
 
-            // 加载背景图逻辑
             const bgImg = new Image();
             bgImg.crossOrigin = "Anonymous";
             const bgPath = `assets/art_${bgArtId}.jpg`;
-            bgImg.src = bgPath;
+            const bgPathRoot = `art_${bgArtId}.jpg`;
 
+            bgImg.src = bgPath;
             bgImg.onload = () => {
                 ctx.save(); ctx.globalAlpha = 0.4; ctx.drawImage(bgImg, 0, 0, 512, 340); ctx.restore();
                 loadAvatar();
             };
             bgImg.onerror = () => {
-                 // 尝试加载备用路径
-                 const bgImg2 = new Image(); bgImg2.crossOrigin = "Anonymous"; bgImg2.src = `art_${bgArtId}.jpg`;
+                 const bgImg2 = new Image(); bgImg2.crossOrigin = "Anonymous"; bgImg2.src = bgPathRoot;
                  bgImg2.onload = () => { ctx.save(); ctx.globalAlpha = 0.4; ctx.drawImage(bgImg2, 0, 0, 512, 340); ctx.restore(); loadAvatar(); };
-                 bgImg2.onerror = () => { loadAvatar(); }; // 背景挂了也继续画文字
+                 bgImg2.onerror = () => { loadAvatar(); };
             };
 
             function loadAvatar() {
                 if(avatarUrl) {
-                    const avImg = new Image();
-                    avImg.crossOrigin = "Anonymous";
-                    avImg.src = avatarUrl;
+                    const avImg = new Image(); avImg.crossOrigin = "Anonymous"; avImg.src = avatarUrl;
                     avImg.onload = () => drawTextAndAvatar(avImg);
-                    // 核心修复：如果图片加载失败（比如被墙），直接画文字版头像，不报错
-                    avImg.onerror = () => { console.log("Avatar load failed, using fallback"); drawTextAndAvatar(null); };
+                    avImg.onerror = () => { drawTextAndAvatar(null); };
                 } else {
                     drawTextAndAvatar(null);
                 }
             }
-
             return tex;
         }
 
