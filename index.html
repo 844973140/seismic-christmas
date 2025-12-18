@@ -38,15 +38,36 @@
     <script type="importmap">
         { "imports": { "three": "https://registry.npmmirror.com/three/0.160.0/files/build/three.module.js", "three/addons/": "https://registry.npmmirror.com/three/0.160.0/files/examples/jsm/" } }
     </script>
+    
+    <script>
+        window.forceEnter = function() {
+            console.log("Forcing entry...");
+            var p = document.getElementById('progress-container');
+            var s = document.getElementById('loading-status');
+            var t = document.getElementById('start-text');
+            if(p) p.style.display = 'none';
+            if(s) s.style.display = 'none';
+            if(t) t.style.display = 'block';
+        };
+        setTimeout(function() {
+            var overlay = document.getElementById('start-overlay');
+            if (overlay && overlay.style.opacity !== '0' && document.getElementById('start-text').style.display !== 'block') {
+                document.getElementById('loading-status').innerText = "Starting...";
+                window.forceEnter();
+            }
+        }, 5000);
+    </script>
 </head>
 <body>
-    <audio id="bgm" loop><source src="" type="audio/mpeg"></audio> <div id="start-overlay">
+    <audio id="bgm" loop preload="auto"><source src="https://music.163.com/song/media/outer/url?id=441491.mp3" type="audio/mpeg"></audio>
+    
+    <div id="start-overlay">
         <div id="progress-container"><div id="progress-bar"></div></div>
         <div id="loading-status">Connecting to Universe...</div>
         <div id="start-text" onclick="startApp()">Click to Enter Seismic Christmas</div>
     </div>
     <div id="ui-layer">
-        <div id="logo-container"><img id="logo-img" src="" alt="SEISMIC CHRISTMAS" crossorigin="anonymous"></div>
+        <div id="logo-container"><img id="logo-img" src="assets/logo.png" alt="SEISMIC CHRISTMAS" crossorigin="anonymous" onerror="if(this.src.includes('assets/logo.png')) this.src='assets/logo.jpg'; else if(this.src.includes('assets/logo.jpg')) this.src='logo.png';"></div>
         <button id="music-btn" onclick="toggleMusic()">🎵 PAUSE MUSIC</button>
         <button id="find-btn" onclick="window.findMyCard()">🔍 FIND MY CARD</button>
         <button id="save-btn" onclick="saveCardImage()">📸 SAVE CARD</button>
@@ -67,34 +88,12 @@
         import TWEEN from 'three/addons/libs/tween.module.js';
 
         // =========================================================
-        // 🔧 【必填配置区域】请修改这里！
+        // 【必填】Supabase 配置
+        // 你的代码里，记得把之前截图里的 Key 填回来！
         // =========================================================
-        
-        // 1. 你的 GitHub 用户名 (例如 w1sh1996)
-        const GITHUB_USER = '844973140'; 
-        
-        // 2. 你的 GitHub 仓库名 (例如 xmas-tree)
-        // 🚨 请确保这里填的是你存放 index.html 的那个仓库名字！
-        const GITHUB_REPO = 'seismic-christmas'; 
-
-        // 3. Supabase 配置 (就是你截图里的那些)
         const SUPABASE_URL = 'https://btqjjzmdbtuhxppvvqgr.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_6caaDPXJ_DFHOqt2JOLyfQ_3HCVcFf7';
-
-        // =========================================================
-
-        // --- 自动计算 CDN 地址 (国内秒开神器) ---
-        function getAssetUrl(path) {
-            // 如果没填仓库名，就回退到本地相对路径（可能会卡）
-            if (GITHUB_REPO === '你的仓库名' || GITHUB_REPO === '') return path;
-            // 使用 jsDelivr 加速 GitHub 文件
-            return `https://cdn.jsdelivr.net/gh/${GITHUB_USER}/${GITHUB_REPO}@main/${path}`;
-        }
-
-        // 自动设置 Logo 和 音乐 的 CDN 链接
-        document.getElementById('logo-img').src = getAssetUrl('assets/logo.png');
-        document.querySelector('#bgm source').src = getAssetUrl('last_christmas.mp3');
-        document.getElementById('bgm').load(); // 重新加载音频
+        // ⚠️ 记得把下面这一行换成你完整的 Key (sb_publishable_...)
+        const SUPABASE_KEY = 'sb_publishable_6caaDPXJ_DFHOqt2JOLyfQ_3HCVcFf7'; 
 
         let supabase = null;
         let DB_READY = false;
@@ -169,7 +168,8 @@
                 const bar = document.getElementById('progress-bar');
                 if(bar) bar.style.width = progress + '%';
             };
-            loadingManager.onLoad = function() { console.log("Assets Loaded"); };
+            
+            loadingManager.onLoad = function() { console.log("Basic assets loaded."); };
             loadingManager.onError = function(url) { console.warn("Asset load failed:", url); };
             
             textureLoader.manager = loadingManager;
@@ -191,17 +191,11 @@
             window.addEventListener('resize', onResize); window.addEventListener('click', onClick); window.addEventListener('dblclick', toggleTreeState);
             animate();
 
-            // 启动逻辑：先读数据库
+            // 数据库连接逻辑：不卡死主界面
             setTimeout(() => {
                 document.getElementById('loading-status').innerText = "Reading Wishes...";
                 fetchCloudCards().finally(() => {
-                    // 强制进入，防止卡死
-                    const p = document.getElementById('progress-container');
-                    const s = document.getElementById('loading-status');
-                    const t = document.getElementById('start-text');
-                    if(p) p.style.display = 'none';
-                    if(s) s.style.display = 'none';
-                    if(t) t.style.display = 'block';
+                    window.forceEnter();
                 });
             }, 500);
         }
@@ -233,7 +227,6 @@
             btn.disabled = true; btn.innerText = "SENDING...";
             let avatarUrl = null; let twitterHandle = nameInput.replace('@', '').trim();
             if (nameInput.includes('@') && twitterHandle.length > 0) { avatarUrl = `https://unavatar.io/twitter/${twitterHandle}`; }
-            
             if (DB_READY) {
                 try {
                     const { data, error } = await supabase.from('wishes').insert([{ name: nameInput, message: msg, avatar_url: avatarUrl }]).select();
@@ -243,18 +236,13 @@
                         localStorage.setItem('seismic_card_id', savedWish.id);
                         localStorage.setItem('seismic_card', JSON.stringify({name: nameInput, msg}));
                     }
-                    
-                    // 【修复刷新问题】：如果已经有卡片了，先移除旧的，再创建新的
                     if(currentUserCard) {
-                        // 找到并从allObjectsData移除，防止动画报错
                         const idx = allObjectsData.findIndex(o => o.mesh === currentUserCard);
                         if(idx > -1) allObjectsData.splice(idx, 1);
                         cardsGroup.remove(currentUserCard);
                         currentUserCard = null;
                     }
-                    // 立即创建新卡片，不需要刷新
                     createCardMesh(msg, nameInput, true, 0, 1, avatarUrl);
-                    
                     document.getElementById('msg-input').value = ""; document.getElementById('user-name').value = ""; btn.innerText = "SENT!";
                 } catch (error) { alert("Submission Failed (Offline Mode): " + error.message); btn.disabled = false; btn.innerText = "HANG THE CARD"; }
             } else {
@@ -265,11 +253,6 @@
             }
         };
 
-        // --- Helper: Get Safe Texture URL ---
-        function getSafeTextureUrl(artId) {
-            return getAssetUrl(`assets/art_${artId}.jpg`);
-        }
-
         function createStarField() { const starsGeo = new THREE.BufferGeometry(); const count = 5000; const posArray = new Float32Array(count * 3); for(let i=0; i<count; i++) { const r = 200 + Math.random() * 600; const theta = 2 * Math.PI * Math.random(); const phi = Math.acos(2 * Math.random() - 1); posArray[i*3] = r * Math.sin(phi) * Math.cos(theta); posArray[i*3+1] = r * Math.sin(phi) * Math.sin(theta); posArray[i*3+2] = r * Math.cos(phi); } starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3)); const starField = new THREE.Points(starsGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, transparent: true, opacity: 0.8 })); backgroundGroup.add(starField); }
         function toggleTreeState() { if (currentState === STATE.SCATTER || currentState === STATE.HERO) forceToTree(); else forceToScatter(); }
         function forceToTree() { currentState = STATE.TREE; document.body.classList.remove('hero-mode'); document.getElementById('save-btn').classList.remove('show'); controls.autoRotate = true; new TWEEN.Tween(camera.position).to({x:0, y:30, z:160}, 1500).easing(TWEEN.Easing.Cubic.Out).start(); new TWEEN.Tween(controls.target).to({x:0, y:0, z:0}, 1500).start(); allObjectsData.forEach(obj => { new TWEEN.Tween(obj.mesh.position).to(obj.treePos, 1500).easing(TWEEN.Easing.Cubic.Out).start(); if(obj.treeRot) new TWEEN.Tween(obj.mesh.rotation).to({x: obj.treeRot.x, y: obj.treeRot.y, z: obj.treeRot.z}, 1500).start(); else new TWEEN.Tween(obj.mesh.rotation).to({x:0, y:0, z:0}, 1500).start(); if(obj.mesh.userData.isCard) new TWEEN.Tween(obj.mesh.scale).to({x: CONFIG.cardScaleTree, y: CONFIG.cardScaleTree, z: CONFIG.cardScaleTree}, 1500).start(); }); if(currentUserCard) document.getElementById('find-btn').classList.add('show'); }
@@ -278,22 +261,30 @@
         function calculatePositions(i,t,y){const h=(Math.random()-.5)*CONFIG.treeHeight,n=(h+CONFIG.treeHeight/2)/CONFIG.treeHeight,m=CONFIG.maxRadius*(1-n),e=i*Math.PI*(3-Math.sqrt(5)),o="card"===y?4:0,r=Math.sqrt(Math.random())*m+o;let a;if("card"===y){const n=(i/t-.5)*CONFIG.treeHeight,m=.2*i,e=(1-(n+CONFIG.treeHeight/2)/CONFIG.treeHeight)*CONFIG.maxRadius+6;a=new THREE.Vector3(e*Math.cos(m),n,e*Math.sin(m));var s=new THREE.Euler(0,-m+Math.PI/2,0)}else a=new THREE.Vector3(r*Math.cos(e),h,r*Math.sin(e)),s=new THREE.Euler(0,-e+Math.PI/2,0),"card"!==y&&s.set(Math.random()*Math.PI,Math.random()*Math.PI,0);const c=60+90*Math.random(),d=Math.random(),l=Math.random(),u=2*Math.PI*d,w=Math.acos(2*l-1),E=new THREE.Vector3(c*Math.sin(w)*Math.cos(u),c*Math.sin(w)*Math.sin(u),c*Math.cos(w));return{treePos:a,treeRot:s,scatterPos:E}}
         function createJewelSystem() { const geoms = [ new THREE.SphereGeometry(0.6, 16, 16), new THREE.BoxGeometry(0.8, 0.8, 0.8), new THREE.OctahedronGeometry(0.7, 0) ]; const mats = [ new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 1, roughness: 0.2, emissive: 0xaa5500, emissiveIntensity: 0.3 }), new THREE.MeshStandardMaterial({ color: 0x00a86b, metalness: 0.2, roughness: 0.1, emissive: 0x004411, emissiveIntensity: 0.8 }), new THREE.MeshStandardMaterial({ color: 0xff0044, metalness: 0.1, roughness: 0, transmission: 0.6, emissive: 0x440011, emissiveIntensity: 0.6 }) ]; const totalJewels = CONFIG.goldCount + CONFIG.silverCount + CONFIG.gemCount; for(let i=0; i<totalJewels; i++) { const mesh = new THREE.Mesh(geoms[i%3], mats[i%3]); const data = calculatePositions(i, totalJewels, 'deco'); mesh.position.copy(data.treePos); mesh.rotation.copy(data.treeRot); mesh.scale.setScalar(0.5 + Math.random() * 0.5); allObjectsData.push({ mesh: mesh, treePos: data.treePos, scatterPos: data.scatterPos, baseScale: mesh.scale.x, phase: Math.random() * Math.PI * 2 }); mainGroup.add(mesh); } const star = new THREE.Mesh(new THREE.OctahedronGeometry(3.5, 0), new THREE.MeshBasicMaterial({ color: 0xffffee })); star.add(new THREE.PointLight(0xffffee, 2, 50)); star.position.y = CONFIG.treeHeight/2 + 2; mainGroup.add(star); allObjectsData.push({ mesh: star, treePos: new THREE.Vector3(0, CONFIG.treeHeight/2 + 2, 0), scatterPos: new THREE.Vector3(0, 100, 0), baseScale: 1, phase: 0 }); }
         
-        // 使用 getSafeTextureUrl 替换写死的路径
+        // --- 恢复本地图片加载逻辑 ---
         function createCardMesh(msg, name, isUser, index, total, avatarUrl = null) { const randomArtIdBack = Math.floor(Math.random() * CONFIG.artCount) + 1; const randomArtIdFront = Math.floor(Math.random() * CONFIG.artCount) + 1; const frontTex = createCardTexture(msg, name, true, avatarUrl, randomArtIdFront); const backMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); 
         
-        // 使用 CDN 路径加载背景图
-        const path = getSafeTextureUrl(randomArtIdBack);
+        // 恢复：本地路径加载
+        const path = `assets/art_${randomArtIdBack}.jpg`;
+        const pathRoot = `art_${randomArtIdBack}.jpg`;
         
         textureLoader.load(path, (tex)=>{ tex.colorSpace = THREE.SRGBColorSpace; backMesh.material.map = tex; backMesh.material.needsUpdate = true; }, undefined, ()=>{ 
-            console.log("Back art load failed"); 
+            // 失败重试上一级目录
+            textureLoader.load(pathRoot, (tex)=>{ tex.colorSpace = THREE.SRGBColorSpace; backMesh.material.map = tex; backMesh.material.needsUpdate = true; });
         }); 
+        
         const geo = new THREE.BoxGeometry(3.2, 2.2, 0.1); const goldSide = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 1.0, roughness: 0.15, emissive: 0xaa7700, emissiveIntensity: 0.2 }); const frontMat = new THREE.MeshBasicMaterial({ map: frontTex }); const frame = new THREE.Mesh(geo, goldSide); const frontMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), frontMat); frontMesh.position.z = 0.06; const backMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), backMat); backMesh.position.z = -0.06; backMesh.rotation.y = Math.PI; const cardGroup = new THREE.Group(); cardGroup.add(frame); cardGroup.add(frontMesh); cardGroup.add(backMesh); const data = calculatePositions(index, total, 'card'); cardGroup.userData = { isCard: true }; if(isUser && currentUserCard === null) { cardGroup.position.set(0, 100, 0); cardGroup.scale.set(0,0,0); currentUserCard = cardGroup; const objData = { mesh: cardGroup, treePos: data.treePos, treeRot: data.treeRot, scatterPos: data.scatterPos, baseScale: CONFIG.cardScaleTree, phase: 0 }; allObjectsData.push(objData); const randomT = Math.random(); const y = (randomT - 0.5) * CONFIG.treeHeight; const rCard = (1 - (y + CONFIG.treeHeight/2)/CONFIG.treeHeight) * CONFIG.maxRadius + 6; const theta = randomT * Math.PI * 15; objData.treePos.set(rCard * Math.cos(theta), y, rCard * Math.sin(theta)); objData.treeRot.set(0, -theta + Math.PI/2, 0); new TWEEN.Tween(cardGroup.position).to(objData.treePos, 1500).easing(TWEEN.Easing.Bounce.Out).start(); new TWEEN.Tween(cardGroup.rotation).to({x:0, y:objData.treeRot.y, z:0}, 1500).start(); new TWEEN.Tween(cardGroup.scale).to({x:CONFIG.cardScaleTree, y:CONFIG.cardScaleTree, z:CONFIG.cardScaleTree}, 1500).start(); document.getElementById('find-btn').classList.add('show'); } else { cardGroup.position.copy(data.treePos); cardGroup.rotation.copy(data.treeRot); cardGroup.scale.setScalar(CONFIG.cardScaleTree); const objData = { mesh: cardGroup, treePos: data.treePos, treeRot: data.treeRot, scatterPos: data.scatterPos, baseScale: CONFIG.cardScaleTree, phase: 0 }; allObjectsData.push(objData); } cardsGroup.add(cardGroup); }
         function createCardTexture(e,t,r,a=null,n=1){const o=document.createElement("canvas");o.width=512,o.height=340;const i=o.getContext("2d"),s=i.createRadialGradient(256,170,50,256,170,350);s.addColorStop(0,"#1a2a1a"),s.addColorStop(1,"#020a02"),i.fillStyle=s,i.fillRect(0,0,512,340);const c=new THREE.CanvasTexture(o);c.colorSpace=THREE.SRGBColorSpace;function d(r=null){i.lineWidth=12,i.strokeStyle="#b8860b",i.strokeRect(6,6,500,328),r?(i.save(),i.beginPath(),i.arc(80,80,45,0,2*Math.PI),i.clip(),i.drawImage(r,35,35,90,90),i.restore(),i.lineWidth=4,i.strokeStyle="#FFD700",i.beginPath(),i.arc(80,80,45,0,2*Math.PI),i.stroke()):(i.save(),i.beginPath(),i.arc(80,80,45,0,2*Math.PI),i.fillStyle="#b8860b",i.fill(),i.fillStyle="#fff",i.font="bold 40px Arial",i.textAlign="center",i.fillText(t.charAt(0).toUpperCase(),80,95),i.restore()),i.fillStyle="#FFD700",i.font="bold 24px Arial",i.textAlign="left",i.shadowColor="black",i.shadowBlur=4,i.shadowOffsetX=1,i.shadowOffsetY=1,i.fillText(t,140,90),i.shadowBlur=0,i.fillStyle="#ffffff",i.font='italic bold 34px "Times New Roman", serif',i.textAlign="center",i.shadowColor="black",i.shadowBlur=6,i.shadowOffsetX=3,i.shadowOffsetY=3,function(e,t,r,a,n,o){let i=t.split(""),s="";for(let t=0;t<i.length;t++){let c=s+i[t];e.measureText(c).width>n&&t>0?(e.fillText(s,r,a),s=i[t],a+=o):s=c}e.fillText(s,r,a)}(i,e,256,180,440,48),c.needsUpdate=!0}
         
-        // 使用 CDN 加速加载背景图片
+        // 恢复：本地图片加载逻辑
         const l=new Image;l.crossOrigin="Anonymous";
-        l.src=getSafeTextureUrl(n);
-        l.onload=()=>{i.save(),i.globalAlpha=.4,i.drawImage(l,0,0,512,340),i.restore(),h()},l.onerror=()=>{h()}; // 失败了就直接画文字，不卡住
+        const localPath = `assets/art_${n}.jpg`;
+        const localPathRoot = `art_${n}.jpg`;
+        l.src = localPath;
+        l.onload=()=>{i.save(),i.globalAlpha=.4,i.drawImage(l,0,0,512,340),i.restore(),h()},l.onerror=()=>{
+             const l2 = new Image; l2.crossOrigin="Anonymous"; l2.src=localPathRoot;
+             l2.onload=()=>{i.save(),i.globalAlpha=.4,i.drawImage(l2,0,0,512,340),i.restore(),h()},l2.onerror=()=>{h()};
+        };
         function h(){if(a){const e=new Image;e.crossOrigin="Anonymous",e.src=a,e.onload=()=>d(e),e.onerror=()=>{d(null)}}else d(null)}return c}
         function onClick(e){if(e.target.closest("#ui-layer")||e.target.closest("#start-overlay"))return;mouse.x=e.clientX/window.innerWidth*2-1,mouse.y=-e.clientY/window.innerHeight*2+1,raycaster.setFromCamera(mouse,camera);const t=raycaster.intersectObjects(cardsGroup.children,!0);if(t.length>0){let e=t[0].object;for(;e.parent&&e.parent!==cardsGroup;)e=e.parent;currentState===STATE.HERO&&Math.abs(e.position.z-82)<5?new TWEEN.Tween(e.rotation).to({y:e.rotation.y+Math.PI},500).start():activateHeroMode(e)}}
         function createDust() { const geo = new THREE.BufferGeometry(); const pos = []; for(let i=0; i<1000; i++) pos.push((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); dustSystem = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xffd700, size: 0.3, transparent: true, opacity: 0.5 })); mainGroup.add(dustSystem); }
