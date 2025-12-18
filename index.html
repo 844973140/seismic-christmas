@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SEISMIC - Christmas Official</title>
-    <script src="https://registry.npmmirror.com/@supabase/supabase-js/2.39.3/files/dist/umd/supabase.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Arial', sans-serif; user-select: none; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
@@ -36,12 +36,12 @@
         @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
     <script type="importmap">
-        { "imports": { "three": "https://registry.npmmirror.com/three/0.160.0/files/build/three.module.js", "three/addons/": "https://registry.npmmirror.com/three/0.160.0/files/examples/jsm/" } }
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
     </script>
     
     <script>
+        // 5秒强制进入，防止网络波动卡死
         window.forceEnter = function() {
-            console.log("Forcing entry...");
             var p = document.getElementById('progress-container');
             var s = document.getElementById('loading-status');
             var t = document.getElementById('start-text');
@@ -59,7 +59,7 @@
     </script>
 </head>
 <body>
-    <audio id="bgm" loop preload="auto"><source src="https://music.163.com/song/media/outer/url?id=441491.mp3" type="audio/mpeg"></audio>
+    <audio id="bgm" loop preload="auto"><source src="last_christmas.mp3" type="audio/mpeg"></audio>
     
     <div id="start-overlay">
         <div id="progress-container"><div id="progress-bar"></div></div>
@@ -89,11 +89,9 @@
 
         // =========================================================
         // 【必填】Supabase 配置
-        // 你的代码里，记得把之前截图里的 Key 填回来！
         // =========================================================
         const SUPABASE_URL = 'https://btqjjzmdbtuhxppvvqgr.supabase.co';
-        // ⚠️ 记得把下面这一行换成你完整的 Key (sb_publishable_...)
-        const SUPABASE_KEY = 'sb_publishable_6caaDPXJ_DFHOqt2JOLyfQ_3HCVcFf7'; 
+        const SUPABASE_KEY = 'sb_publishable_6caaDPXJ_DFHOqt2JOLyfQ_3HCVcFf7';
 
         let supabase = null;
         let DB_READY = false;
@@ -191,7 +189,7 @@
             window.addEventListener('resize', onResize); window.addEventListener('click', onClick); window.addEventListener('dblclick', toggleTreeState);
             animate();
 
-            // 数据库连接逻辑：不卡死主界面
+            // 数据库逻辑：不卡死主线程
             setTimeout(() => {
                 document.getElementById('loading-status').innerText = "Reading Wishes...";
                 fetchCloudCards().finally(() => {
@@ -201,21 +199,35 @@
         }
 
         async function fetchCloudCards() {
-            const localSaved = localStorage.getItem('seismic_card');
-            const localId = localStorage.getItem('seismic_card_id');
-            if(localSaved) { try { const { name, msg } = JSON.parse(localSaved); createCardMesh(msg, name, true, 0, 1, null); } catch(e){} }
-            
             if (!DB_READY) return;
             try {
+                // 读取全部，不做本地缓存过滤，每次进来都随机看
                 const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000));
-                const dbQuery = supabase.from('wishes').select('*').order('created_at', { ascending: false }).limit(500);
+                
+                // 1. 获取所有数据（Supabase 默认最多返回1000条，对我们足够了）
+                const dbQuery = supabase.from('wishes').select('*').order('created_at', { ascending: false });
+                
                 const { data, error } = await Promise.race([dbQuery, timeoutPromise]);
                 if (error) throw error;
                 if (!data) return;
+
                 let cardsToDisplay = data;
-                if (data.length > CONFIG.maxCardsDisplay) cardsToDisplay = data.sort(() => 0.5 - Math.random()).slice(0, CONFIG.maxCardsDisplay);
-                const currentCount = cardsGroup.children.length;
-                cardsToDisplay.forEach((row, i) => { if (row.id == localId) return; createCardMesh(row.message, row.name, false, i + currentCount, cardsToDisplay.length, row.avatar_url); });
+                
+                // 2. 随机逻辑：如果超过 300 条，随机取 300 条
+                if (data.length > CONFIG.maxCardsDisplay) {
+                     // 简单的 Fisher-Yates 洗牌算法
+                     for (let i = data.length - 1; i > 0; i--) {
+                         const j = Math.floor(Math.random() * (i + 1));
+                         [data[i], data[j]] = [data[j], data[i]];
+                     }
+                     cardsToDisplay = data.slice(0, CONFIG.maxCardsDisplay);
+                }
+
+                // 3. 创建卡片
+                cardsToDisplay.forEach((row, i) => { 
+                    createCardMesh(row.message, row.name, false, i, cardsToDisplay.length, row.avatar_url); 
+                });
+
             } catch (error) { console.log("Offline/Error:", error); }
         }
 
@@ -227,29 +239,31 @@
             btn.disabled = true; btn.innerText = "SENDING...";
             let avatarUrl = null; let twitterHandle = nameInput.replace('@', '').trim();
             if (nameInput.includes('@') && twitterHandle.length > 0) { avatarUrl = `https://unavatar.io/twitter/${twitterHandle}`; }
+            
             if (DB_READY) {
                 try {
                     const { data, error } = await supabase.from('wishes').insert([{ name: nameInput, message: msg, avatar_url: avatarUrl }]).select();
                     if (error) throw error;
-                    if (data && data.length > 0) {
-                        const savedWish = data[0];
-                        localStorage.setItem('seismic_card_id', savedWish.id);
-                        localStorage.setItem('seismic_card', JSON.stringify({name: nameInput, msg}));
-                    }
-                    if(currentUserCard) {
-                        const idx = allObjectsData.findIndex(o => o.mesh === currentUserCard);
-                        if(idx > -1) allObjectsData.splice(idx, 1);
-                        cardsGroup.remove(currentUserCard);
-                        currentUserCard = null;
-                    }
+                    
+                    // 【关键修改】：允许无限写，永远定位到最新一张
+                    // 不再移除旧卡片，直接新增一张属于你的卡片
+                    
+                    // 1. 创建新卡片到场景中
+                    // 注意：为了不让树太拥挤，新卡片只是“看上去”是你的，不会存到 allObjectsData 里做随机位置
+                    // 这样你可以一直写，场景里会多出来这个新卡片
+                    
                     createCardMesh(msg, nameInput, true, 0, 1, avatarUrl);
+                    
                     document.getElementById('msg-input').value = ""; document.getElementById('user-name').value = ""; btn.innerText = "SENT!";
-                } catch (error) { alert("Submission Failed (Offline Mode): " + error.message); btn.disabled = false; btn.innerText = "HANG THE CARD"; }
+                    // 2秒后恢复按钮，允许继续写
+                    setTimeout(() => { btn.disabled = false; btn.innerText = "HANG ANOTHER"; }, 2000);
+                    
+                } catch (error) { alert("Submission Failed: " + error.message); btn.disabled = false; btn.innerText = "HANG THE CARD"; }
             } else {
-                localStorage.setItem('seismic_card', JSON.stringify({name: nameInput, msg}));
-                if(currentUserCard) { cardsGroup.remove(currentUserCard); currentUserCard = null; }
+                // 离线模式
                 createCardMesh(msg, nameInput, true, 0, 1, avatarUrl);
                 btn.innerText = "SENT (LOCAL)";
+                setTimeout(() => { btn.disabled = false; btn.innerText = "HANG ANOTHER"; }, 2000);
             }
         };
 
@@ -261,25 +275,42 @@
         function calculatePositions(i,t,y){const h=(Math.random()-.5)*CONFIG.treeHeight,n=(h+CONFIG.treeHeight/2)/CONFIG.treeHeight,m=CONFIG.maxRadius*(1-n),e=i*Math.PI*(3-Math.sqrt(5)),o="card"===y?4:0,r=Math.sqrt(Math.random())*m+o;let a;if("card"===y){const n=(i/t-.5)*CONFIG.treeHeight,m=.2*i,e=(1-(n+CONFIG.treeHeight/2)/CONFIG.treeHeight)*CONFIG.maxRadius+6;a=new THREE.Vector3(e*Math.cos(m),n,e*Math.sin(m));var s=new THREE.Euler(0,-m+Math.PI/2,0)}else a=new THREE.Vector3(r*Math.cos(e),h,r*Math.sin(e)),s=new THREE.Euler(0,-e+Math.PI/2,0),"card"!==y&&s.set(Math.random()*Math.PI,Math.random()*Math.PI,0);const c=60+90*Math.random(),d=Math.random(),l=Math.random(),u=2*Math.PI*d,w=Math.acos(2*l-1),E=new THREE.Vector3(c*Math.sin(w)*Math.cos(u),c*Math.sin(w)*Math.sin(u),c*Math.cos(w));return{treePos:a,treeRot:s,scatterPos:E}}
         function createJewelSystem() { const geoms = [ new THREE.SphereGeometry(0.6, 16, 16), new THREE.BoxGeometry(0.8, 0.8, 0.8), new THREE.OctahedronGeometry(0.7, 0) ]; const mats = [ new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 1, roughness: 0.2, emissive: 0xaa5500, emissiveIntensity: 0.3 }), new THREE.MeshStandardMaterial({ color: 0x00a86b, metalness: 0.2, roughness: 0.1, emissive: 0x004411, emissiveIntensity: 0.8 }), new THREE.MeshStandardMaterial({ color: 0xff0044, metalness: 0.1, roughness: 0, transmission: 0.6, emissive: 0x440011, emissiveIntensity: 0.6 }) ]; const totalJewels = CONFIG.goldCount + CONFIG.silverCount + CONFIG.gemCount; for(let i=0; i<totalJewels; i++) { const mesh = new THREE.Mesh(geoms[i%3], mats[i%3]); const data = calculatePositions(i, totalJewels, 'deco'); mesh.position.copy(data.treePos); mesh.rotation.copy(data.treeRot); mesh.scale.setScalar(0.5 + Math.random() * 0.5); allObjectsData.push({ mesh: mesh, treePos: data.treePos, scatterPos: data.scatterPos, baseScale: mesh.scale.x, phase: Math.random() * Math.PI * 2 }); mainGroup.add(mesh); } const star = new THREE.Mesh(new THREE.OctahedronGeometry(3.5, 0), new THREE.MeshBasicMaterial({ color: 0xffffee })); star.add(new THREE.PointLight(0xffffee, 2, 50)); star.position.y = CONFIG.treeHeight/2 + 2; mainGroup.add(star); allObjectsData.push({ mesh: star, treePos: new THREE.Vector3(0, CONFIG.treeHeight/2 + 2, 0), scatterPos: new THREE.Vector3(0, 100, 0), baseScale: 1, phase: 0 }); }
         
-        // --- 恢复本地图片加载逻辑 ---
         function createCardMesh(msg, name, isUser, index, total, avatarUrl = null) { const randomArtIdBack = Math.floor(Math.random() * CONFIG.artCount) + 1; const randomArtIdFront = Math.floor(Math.random() * CONFIG.artCount) + 1; const frontTex = createCardTexture(msg, name, true, avatarUrl, randomArtIdFront); const backMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); 
         
-        // 恢复：本地路径加载
+        // 本地加载背景图
         const path = `assets/art_${randomArtIdBack}.jpg`;
         const pathRoot = `art_${randomArtIdBack}.jpg`;
+        textureLoader.load(path, (tex)=>{ tex.colorSpace = THREE.SRGBColorSpace; backMesh.material.map = tex; backMesh.material.needsUpdate = true; }, undefined, ()=>{ textureLoader.load(pathRoot, (tex)=>{ tex.colorSpace = THREE.SRGBColorSpace; backMesh.material.map = tex; backMesh.material.needsUpdate = true; }); }); 
         
-        textureLoader.load(path, (tex)=>{ tex.colorSpace = THREE.SRGBColorSpace; backMesh.material.map = tex; backMesh.material.needsUpdate = true; }, undefined, ()=>{ 
-            // 失败重试上一级目录
-            textureLoader.load(pathRoot, (tex)=>{ tex.colorSpace = THREE.SRGBColorSpace; backMesh.material.map = tex; backMesh.material.needsUpdate = true; });
-        }); 
+        const geo = new THREE.BoxGeometry(3.2, 2.2, 0.1); const goldSide = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 1.0, roughness: 0.15, emissive: 0xaa7700, emissiveIntensity: 0.2 }); const frontMat = new THREE.MeshBasicMaterial({ map: frontTex }); const frame = new THREE.Mesh(geo, goldSide); const frontMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), frontMat); frontMesh.position.z = 0.06; const backMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), backMat); backMesh.position.z = -0.06; backMesh.rotation.y = Math.PI; const cardGroup = new THREE.Group(); cardGroup.add(frame); cardGroup.add(frontMesh); cardGroup.add(backMesh); const data = calculatePositions(index, total, 'card'); cardGroup.userData = { isCard: true }; 
         
-        const geo = new THREE.BoxGeometry(3.2, 2.2, 0.1); const goldSide = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 1.0, roughness: 0.15, emissive: 0xaa7700, emissiveIntensity: 0.2 }); const frontMat = new THREE.MeshBasicMaterial({ map: frontTex }); const frame = new THREE.Mesh(geo, goldSide); const frontMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), frontMat); frontMesh.position.z = 0.06; const backMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), backMat); backMesh.position.z = -0.06; backMesh.rotation.y = Math.PI; const cardGroup = new THREE.Group(); cardGroup.add(frame); cardGroup.add(frontMesh); cardGroup.add(backMesh); const data = calculatePositions(index, total, 'card'); cardGroup.userData = { isCard: true }; if(isUser && currentUserCard === null) { cardGroup.position.set(0, 100, 0); cardGroup.scale.set(0,0,0); currentUserCard = cardGroup; const objData = { mesh: cardGroup, treePos: data.treePos, treeRot: data.treeRot, scatterPos: data.scatterPos, baseScale: CONFIG.cardScaleTree, phase: 0 }; allObjectsData.push(objData); const randomT = Math.random(); const y = (randomT - 0.5) * CONFIG.treeHeight; const rCard = (1 - (y + CONFIG.treeHeight/2)/CONFIG.treeHeight) * CONFIG.maxRadius + 6; const theta = randomT * Math.PI * 15; objData.treePos.set(rCard * Math.cos(theta), y, rCard * Math.sin(theta)); objData.treeRot.set(0, -theta + Math.PI/2, 0); new TWEEN.Tween(cardGroup.position).to(objData.treePos, 1500).easing(TWEEN.Easing.Bounce.Out).start(); new TWEEN.Tween(cardGroup.rotation).to({x:0, y:objData.treeRot.y, z:0}, 1500).start(); new TWEEN.Tween(cardGroup.scale).to({x:CONFIG.cardScaleTree, y:CONFIG.cardScaleTree, z:CONFIG.cardScaleTree}, 1500).start(); document.getElementById('find-btn').classList.add('show'); } else { cardGroup.position.copy(data.treePos); cardGroup.rotation.copy(data.treeRot); cardGroup.scale.setScalar(CONFIG.cardScaleTree); const objData = { mesh: cardGroup, treePos: data.treePos, treeRot: data.treeRot, scatterPos: data.scatterPos, baseScale: CONFIG.cardScaleTree, phase: 0 }; allObjectsData.push(objData); } cardsGroup.add(cardGroup); }
+        // 关键修改：如果是用户新发的卡片，总是作为最新的 currentUserCard
+        if(isUser) { 
+            cardGroup.position.set(0, 100, 0); cardGroup.scale.set(0,0,0); 
+            // 更新当前用户的卡片引用，这样 findMyCard 总是找最新的
+            currentUserCard = cardGroup; 
+            
+            // 注意：我们不把新卡片加到 allObjectsData 里参与随机散射，因为它没有固定的树上位置，只做展示
+            // 或者我们可以给它一个临时的树上位置
+            const objData = { mesh: cardGroup, treePos: data.treePos, treeRot: data.treeRot, scatterPos: data.scatterPos, baseScale: CONFIG.cardScaleTree, phase: 0 };
+            
+            const randomT = Math.random(); const y = (randomT - 0.5) * CONFIG.treeHeight; const rCard = (1 - (y + CONFIG.treeHeight/2)/CONFIG.treeHeight) * CONFIG.maxRadius + 6; const theta = randomT * Math.PI * 15; 
+            objData.treePos.set(rCard * Math.cos(theta), y, rCard * Math.sin(theta)); objData.treeRot.set(0, -theta + Math.PI/2, 0); 
+            
+            new TWEEN.Tween(cardGroup.position).to(objData.treePos, 1500).easing(TWEEN.Easing.Bounce.Out).start(); 
+            new TWEEN.Tween(cardGroup.rotation).to({x:0, y:objData.treeRot.y, z:0}, 1500).start(); 
+            new TWEEN.Tween(cardGroup.scale).to({x:CONFIG.cardScaleTree, y:CONFIG.cardScaleTree, z:CONFIG.cardScaleTree}, 1500).start(); 
+            document.getElementById('find-btn').classList.add('show'); 
+        } else { 
+            cardGroup.position.copy(data.treePos); cardGroup.rotation.copy(data.treeRot); cardGroup.scale.setScalar(CONFIG.cardScaleTree); 
+            const objData = { mesh: cardGroup, treePos: data.treePos, treeRot: data.treeRot, scatterPos: data.scatterPos, baseScale: CONFIG.cardScaleTree, phase: 0 }; 
+            allObjectsData.push(objData); 
+        } 
+        cardsGroup.add(cardGroup); }
+        
         function createCardTexture(e,t,r,a=null,n=1){const o=document.createElement("canvas");o.width=512,o.height=340;const i=o.getContext("2d"),s=i.createRadialGradient(256,170,50,256,170,350);s.addColorStop(0,"#1a2a1a"),s.addColorStop(1,"#020a02"),i.fillStyle=s,i.fillRect(0,0,512,340);const c=new THREE.CanvasTexture(o);c.colorSpace=THREE.SRGBColorSpace;function d(r=null){i.lineWidth=12,i.strokeStyle="#b8860b",i.strokeRect(6,6,500,328),r?(i.save(),i.beginPath(),i.arc(80,80,45,0,2*Math.PI),i.clip(),i.drawImage(r,35,35,90,90),i.restore(),i.lineWidth=4,i.strokeStyle="#FFD700",i.beginPath(),i.arc(80,80,45,0,2*Math.PI),i.stroke()):(i.save(),i.beginPath(),i.arc(80,80,45,0,2*Math.PI),i.fillStyle="#b8860b",i.fill(),i.fillStyle="#fff",i.font="bold 40px Arial",i.textAlign="center",i.fillText(t.charAt(0).toUpperCase(),80,95),i.restore()),i.fillStyle="#FFD700",i.font="bold 24px Arial",i.textAlign="left",i.shadowColor="black",i.shadowBlur=4,i.shadowOffsetX=1,i.shadowOffsetY=1,i.fillText(t,140,90),i.shadowBlur=0,i.fillStyle="#ffffff",i.font='italic bold 34px "Times New Roman", serif',i.textAlign="center",i.shadowColor="black",i.shadowBlur=6,i.shadowOffsetX=3,i.shadowOffsetY=3,function(e,t,r,a,n,o){let i=t.split(""),s="";for(let t=0;t<i.length;t++){let c=s+i[t];e.measureText(c).width>n&&t>0?(e.fillText(s,r,a),s=i[t],a+=o):s=c}e.fillText(s,r,a)}(i,e,256,180,440,48),c.needsUpdate=!0}
-        
-        // 恢复：本地图片加载逻辑
         const l=new Image;l.crossOrigin="Anonymous";
-        const localPath = `assets/art_${n}.jpg`;
-        const localPathRoot = `art_${n}.jpg`;
+        const localPath = `assets/art_${n}.jpg`; const localPathRoot = `art_${n}.jpg`;
         l.src = localPath;
         l.onload=()=>{i.save(),i.globalAlpha=.4,i.drawImage(l,0,0,512,340),i.restore(),h()},l.onerror=()=>{
              const l2 = new Image; l2.crossOrigin="Anonymous"; l2.src=localPathRoot;
