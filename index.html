@@ -61,23 +61,23 @@
         #find-btn.show { opacity: 1; pointer-events: auto; transform: translateY(-50%) scale(1); }
         #find-btn:hover { box-shadow: 0 0 40px rgba(255, 215, 0, 0.8); transform: translateY(-50%) scale(1.1); background: linear-gradient(135deg, #ffe066, #d4af37); }
 
-        /* SHARE BUTTON */
-        #share-btn {
+        /* SAVE BUTTON */
+        #save-btn {
             position: absolute; 
             bottom: 150px; right: 40px; 
-            background: rgba(29, 161, 242, 0.9); 
+            background: rgba(0, 123, 255, 0.9); 
             color: #fff; border: 1px solid rgba(255,255,255,0.5);
             padding: 12px 25px; border-radius: 30px;
             font-size: 14px; font-weight: bold; letter-spacing: 1px;
             pointer-events: auto; cursor: pointer;
-            box-shadow: 0 0 20px rgba(29, 161, 242, 0.4);
+            box-shadow: 0 0 20px rgba(0, 123, 255, 0.4);
             opacity: 0; pointer-events: none; transform: translateY(20px);
             transition: all 0.5s ease;
             z-index: 20;
             display: flex; align-items: center; gap: 8px;
         }
-        #share-btn.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
-        #share-btn:hover { background: #1a91da; transform: scale(1.05); }
+        #save-btn.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+        #save-btn:hover { background: #0056b3; transform: scale(1.05); }
 
         /* Input Panel */
         #input-panel {
@@ -167,15 +167,19 @@
 
     <div id="ui-layer">
         <div id="logo-container">
-            <img id="logo-img" src="assets/logo.png" alt="SEISMIC CHRISTMAS" onerror="this.src='assets/logo.jpg'">
+            <img id="logo-img" 
+                 src="assets/logo.png" 
+                 alt="SEISMIC CHRISTMAS" 
+                 crossorigin="anonymous"
+                 onerror="if(this.src.includes('assets/logo.png')) this.src='assets/logo.jpg'; else if(this.src.includes('assets/logo.jpg')) this.src='logo.png'; else if(this.src.endsWith('logo.png')) this.src='logo.jpg';">
         </div>
         
         <button id="music-btn" onclick="toggleMusic()">🎵 PAUSE MUSIC</button>
         <button id="find-btn" onclick="window.findMyCard()">🔍 FIND MY CARD</button>
-        <button id="share-btn" onclick="snapshotAndShare()">📸 SNAP & SHARE</button>
+        <button id="save-btn" onclick="saveCardImage()">📸 SAVE CARD</button>
 
         <div id="input-panel">
-            <input type="text" id="user-name" placeholder="Name / Twitter ID" maxlength="15">
+            <input type="text" id="user-name" placeholder="Name or @TwitterHandle" maxlength="20">
             <textarea id="msg-input" rows="2" placeholder="Write your wish here..." maxlength="40"></textarea>
             <button class="action-btn" onclick="submitCard()">HANG THE CARD</button>
         </div>
@@ -200,7 +204,7 @@
             maxRadius: 38,
             cardScaleTree: 0.45, 
             presetCardCount: 300,
-            artCount: 29 // 29张图
+            artCount: 29 
         };
 
         const STATE = { TREE: 'tree', SCATTER: 'scatter', HERO: 'hero' };
@@ -247,18 +251,41 @@
             }
         };
 
-        window.snapshotAndShare = function() {
+        // --- 截图 + 合成Logo ---
+        window.saveCardImage = function() {
             composer.render();
-            const dataURL = renderer.domElement.toDataURL('image/png');
+            
+            const canvas3D = renderer.domElement;
+            const compositeCanvas = document.createElement('canvas');
+            compositeCanvas.width = canvas3D.width;
+            compositeCanvas.height = canvas3D.height;
+            const ctx = compositeCanvas.getContext('2d');
+            
+            // 1. 画3D场景
+            ctx.drawImage(canvas3D, 0, 0);
+            
+            // 2. 画Logo
+            const logo = document.getElementById('logo-img');
+            if (logo && logo.complete && logo.naturalHeight !== 0) {
+                const pixelRatio = renderer.getPixelRatio();
+                const rect = logo.getBoundingClientRect();
+                const drawWidth = rect.width * pixelRatio;
+                const drawHeight = rect.height * pixelRatio;
+                const drawX = (compositeCanvas.width - drawWidth) / 2;
+                const drawY = 20 * pixelRatio; 
+                
+                try {
+                    ctx.drawImage(logo, drawX, drawY, drawWidth, drawHeight);
+                } catch(e) {
+                    console.log("Logo draw failed (likely CORS locally):", e);
+                }
+            }
+
+            const dataURL = compositeCanvas.toDataURL('image/png');
             const link = document.createElement('a');
-            link.download = 'seismic-wish.png';
+            link.download = 'Seismic_Wish.png';
             link.href = dataURL;
             link.click();
-
-            const text = "Just hung my wish on the SEISMIC Christmas Tree! 🎄✨ Come join us! #Seismic #Web3";
-            const url = window.location.href; 
-            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-            window.open(twitterUrl, '_blank');
         };
 
         function init() {
@@ -356,7 +383,7 @@
         function forceToTree() {
             currentState = STATE.TREE;
             document.body.classList.remove('hero-mode'); 
-            document.getElementById('share-btn').classList.remove('show'); 
+            document.getElementById('save-btn').classList.remove('show'); 
             controls.autoRotate = true;
             new TWEEN.Tween(camera.position).to({x:0, y:30, z:160}, 1500).easing(TWEEN.Easing.Cubic.Out).start();
             new TWEEN.Tween(controls.target).to({x:0, y:0, z:0}, 1500).start();
@@ -385,9 +412,9 @@
             document.body.classList.add('hero-mode'); 
             
             if(currentUserCard && targetCard === currentUserCard) {
-                document.getElementById('share-btn').classList.add('show');
+                document.getElementById('save-btn').classList.add('show');
             } else {
-                document.getElementById('share-btn').classList.remove('show');
+                document.getElementById('save-btn').classList.remove('show');
             }
 
             controls.autoRotate = false;
@@ -465,19 +492,27 @@
         }
 
         window.submitCard = function() {
-            const name = document.getElementById('user-name').value.trim() || "Guest";
+            const nameInput = document.getElementById('user-name').value.trim() || "Guest";
             const msg = document.getElementById('msg-input').value.trim();
             if(!msg) { alert("Please write a wish!"); return; }
-            localStorage.setItem('seismic_card', JSON.stringify({name, msg}));
-            createCardMesh(msg, name, true, 0, 1);
+            localStorage.setItem('seismic_card', JSON.stringify({name: nameInput, msg}));
+            
+            let avatar = null;
+            if(nameInput.startsWith('@') && nameInput.length > 1) {
+                const handle = nameInput.substring(1);
+                avatar = `https://unavatar.io/twitter/${handle}`;
+            }
+
+            createCardMesh(msg, nameInput, true, 0, 1, avatar);
             document.getElementById('msg-input').value = ""; document.getElementById('user-name').value = "";
         };
 
-        function createCardMesh(msg, name, isUser, index, total) {
-            const frontTex = createCardTexture(msg, name, true); 
-            // [精准修正] 读取格式: assets/art_1.jpg ... assets/art_29.jpg
-            // 确保文件名是下划线，不是空格括号
+        function createCardMesh(msg, name, isUser, index, total, avatarUrl = null) {
+            const frontTex = createCardTexture(msg, name, true, avatarUrl); 
+            
             const randomArtId = Math.floor(Math.random() * CONFIG.artCount) + 1;
+            
+            // [UPDATED] Uses 'assets/art_1.jpg' format
             const backTex = textureLoader.load(
                 `assets/art_${randomArtId}.jpg`, 
                 undefined, undefined, 
@@ -522,18 +557,37 @@
             }
         }
 
-        function createCardTexture(msg, name, isFront) {
+        function createCardTexture(msg, name, isFront, avatarUrl = null) {
             const canvas = document.createElement('canvas');
             canvas.width = 256; canvas.height = 170; const ctx = canvas.getContext('2d');
             ctx.fillStyle = isFront ? '#dccba9' : '#003311'; ctx.fillRect(0,0,256,170);
             ctx.lineWidth = 3; ctx.strokeStyle = isFront ? '#8a0303' : '#c5a028'; ctx.strokeRect(5,5,246,160);
+            
+            const tex = new THREE.CanvasTexture(canvas); 
+            tex.colorSpace = THREE.SRGBColorSpace;
+
             if(isFront) {
-                ctx.save(); ctx.beginPath(); ctx.arc(40, 40, 22, 0, Math.PI*2); ctx.fillStyle = '#b8860b'; ctx.fill(); 
-                ctx.fillStyle = '#fff'; ctx.font='bold 20px Arial'; ctx.textAlign='center'; ctx.fillText(name.charAt(0).toUpperCase(), 40, 47); ctx.restore();
+                if (avatarUrl) {
+                    const img = new Image();
+                    img.crossOrigin = "Anonymous";
+                    img.src = avatarUrl;
+                    img.onload = () => {
+                        ctx.save();
+                        ctx.beginPath(); ctx.arc(40, 40, 22, 0, Math.PI*2); ctx.clip();
+                        ctx.drawImage(img, 18, 18, 44, 44);
+                        ctx.restore();
+                        tex.needsUpdate = true;
+                    };
+                    ctx.save(); ctx.beginPath(); ctx.arc(40, 40, 22, 0, Math.PI*2); ctx.fillStyle = '#b8860b'; ctx.fill(); ctx.restore();
+                } else {
+                    ctx.save(); ctx.beginPath(); ctx.arc(40, 40, 22, 0, Math.PI*2); ctx.fillStyle = '#b8860b'; ctx.fill(); 
+                    ctx.fillStyle = '#fff'; ctx.font='bold 20px Arial'; ctx.textAlign='center'; ctx.fillText(name.charAt(0).toUpperCase(), 40, 47); ctx.restore();
+                }
+                
                 ctx.fillStyle = '#222'; ctx.font = 'bold 12px Arial'; ctx.textAlign = 'left'; ctx.fillText(name, 70, 45);
                 ctx.fillStyle = '#8a0303'; ctx.font = 'italic 16px "Times New Roman", serif'; ctx.textAlign = 'center'; wrapText(ctx, msg, 128, 90, 210, 22);
             }
-            const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace; return tex;
+            return tex;
         }
 
         function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
