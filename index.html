@@ -26,7 +26,6 @@
         }
         #logo-img {
             height: auto; width: 240px; display: block; margin: 0 auto;
-            /* 允许跨域 */
             crossorigin: anonymous; 
         }
         @keyframes logoPulse {
@@ -85,7 +84,7 @@
         #input-panel {
             position: absolute; 
             bottom: 40px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.5); /* 加深背景，突出输入框 */
+            background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
             padding: 25px; border-radius: 20px;
             border: 1px solid rgba(255, 215, 0, 0.3);
@@ -316,7 +315,6 @@
             document.body.appendChild(renderer.domElement);
 
             const renderScene = new RenderPass(scene, camera);
-            // [调整] 降低 Bloom 强度，防止过曝
             const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
             bloomPass.threshold = 0.5; bloomPass.strength = 0.35; bloomPass.radius = 0.5;
 
@@ -479,7 +477,6 @@
 
         function createPresetCards() {
             if(CONFIG.presetCardCount <= 0) return;
-            // ... (假卡逻辑跳过)
         }
 
         window.submitCard = function() {
@@ -488,12 +485,9 @@
             if(!msg) { alert("Please write a wish!"); return; }
             localStorage.setItem('seismic_card', JSON.stringify({name: nameInput, msg}));
             
-            // [修复] 更强大的推特ID识别：只要有字就试着当ID抓取
             let avatar = null;
             let twitterHandle = nameInput.replace('@', '').trim();
-            // 如果输入里包含空格（比如 "Elon Musk"），就不抓头像；如果是 "w1sh1996" 这种纯字符，就抓
             if (twitterHandle.length > 0 && !twitterHandle.includes(' ')) {
-                // 加时间戳防止缓存
                 avatar = `https://unavatar.io/twitter/${twitterHandle}?t=${new Date().getTime()}`;
             }
 
@@ -503,13 +497,11 @@
 
         function createCardMesh(msg, name, isUser, index, total, avatarUrl = null) {
             
-            // 随机两个不一样的图，分别给正面底纹和背面
             const randomArtIdBack = Math.floor(Math.random() * CONFIG.artCount) + 1;
             const randomArtIdFront = Math.floor(Math.random() * CONFIG.artCount) + 1;
 
             const frontTex = createCardTexture(msg, name, true, avatarUrl, randomArtIdFront); 
             
-            // [暴力重试加载] 背面图片
             const path1 = `assets/art_${randomArtIdBack}.jpg`; 
             const path2 = `art_${randomArtIdBack}.jpg`; 
             
@@ -529,7 +521,8 @@
             const geo = new THREE.BoxGeometry(3.2, 2.2, 0.1);
             const goldSide = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 1.0, roughness: 0.15, emissive: 0xaa7700, emissiveIntensity: 0.2 });
             const frontMat = new THREE.MeshBasicMaterial({ map: frontTex });
-            const backMat = new THREE.MeshBasicMaterial({ map: backTex, color: 0xffffff });
+            // [修复] 背面保底色改为深墨绿，防止加载失败时太亮
+            const backMat = new THREE.MeshBasicMaterial({ map: backTex, color: 0x051105 });
             
             const frame = new THREE.Mesh(geo, goldSide);
             const frontMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), frontMat); frontMesh.position.z = 0.06;
@@ -563,26 +556,32 @@
             }
         }
 
-        // [核心修改] 黑色底色 + 浅色底纹 + 金色文字
+        // [核心修改] V3.1 质感修复版
         function createCardTexture(msg, name, isFront, avatarUrl = null, bgArtId = 1) {
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 340; 
             const ctx = canvas.getContext('2d');
             
-            // 1. 深色背景 (深绿/黑)
-            ctx.fillStyle = isFront ? '#051105' : '#000000'; 
+            // [修复] 使用高级的深绿色径向渐变代替死黑底
+            // 这样即使图片没加载出来，也是一个有质感的墨绿色卡片
+            if(isFront) {
+                const grd = ctx.createRadialGradient(256, 170, 50, 256, 170, 350);
+                grd.addColorStop(0, '#1a2a1a'); // 中心稍亮
+                grd.addColorStop(1, '#020a02'); // 边缘深墨绿/黑
+                ctx.fillStyle = grd;
+            } else {
+                ctx.fillStyle = '#000000'; 
+            }
             ctx.fillRect(0,0,512,340);
 
             const tex = new THREE.CanvasTexture(canvas); 
             tex.colorSpace = THREE.SRGBColorSpace;
 
             function drawContent() {
-                // 边框
                 ctx.lineWidth = 12; ctx.strokeStyle = '#b8860b'; 
                 ctx.strokeRect(6,6,500,328);
 
                 if(isFront) {
-                    // 头像/首字母
                     if (avatarUrl && avatarImg && avatarImg.complete) {
                         ctx.save();
                         ctx.beginPath(); ctx.arc(80, 80, 45, 0, Math.PI*2); ctx.clip();
@@ -595,53 +594,49 @@
                         ctx.fillText(name.charAt(0).toUpperCase(), 80, 95); ctx.restore();
                     }
                     
-                    // 名字 (金色)
                     ctx.fillStyle = '#FFD700'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'left'; 
-                    ctx.shadowColor="black"; ctx.shadowBlur=4;
+                    ctx.shadowColor="black"; ctx.shadowBlur=4; ctx.shadowOffsetX=1; ctx.shadowOffsetY=1;
                     ctx.fillText(name, 140, 90);
                     ctx.shadowBlur=0;
 
-                    // 祝福语 (白色 + 强阴影)
+                    // [修复] 加重文字投影，确保清晰
                     ctx.fillStyle = '#ffffff'; ctx.font = 'italic bold 34px "Times New Roman", serif'; ctx.textAlign = 'center'; 
-                    // 黑色描边让字跳出来
-                    ctx.shadowColor="black"; ctx.shadowBlur=8; ctx.shadowOffsetX=2; ctx.shadowOffsetY=2;
+                    ctx.shadowColor="#000000"; ctx.shadowBlur=6; ctx.shadowOffsetX=3; ctx.shadowOffsetY=3;
                     wrapText(ctx, msg, 256, 180, 440, 48);
                 }
                 tex.needsUpdate = true;
             }
 
-            // A. 加载背景图做底纹
             if(isFront) {
                 const bgImg = new Image();
                 bgImg.crossOrigin = "Anonymous";
-                // 尝试加载两处位置
                 const path1 = `assets/art_${bgArtId}.jpg`;
                 bgImg.src = path1;
                 
                 bgImg.onload = () => {
                     ctx.save();
-                    ctx.globalAlpha = 0.3; // 30% 透明度，隐约可见
+                    // [调整] 透明度提高到 40%，底纹更清晰
+                    ctx.globalAlpha = 0.4; 
                     ctx.drawImage(bgImg, 0, 0, 512, 340);
                     ctx.restore();
                     drawContent();
                 };
-                // 失败就尝试根目录
                 bgImg.onerror = () => { 
                     const bgImg2 = new Image();
                     bgImg2.crossOrigin = "Anonymous";
                     bgImg2.src = `art_${bgArtId}.jpg`;
                     bgImg2.onload = () => {
                         ctx.save();
-                        ctx.globalAlpha = 0.3;
+                        ctx.globalAlpha = 0.4;
                         ctx.drawImage(bgImg2, 0, 0, 512, 340);
                         ctx.restore();
                         drawContent();
                     };
-                    bgImg2.onerror = () => { drawContent(); }; // 实在不行就不画底图
+                    // 如果图片都加载失败，就只显示渐变底色和文字
+                    bgImg2.onerror = () => { drawContent(); }; 
                 };
             }
 
-            // B. 加载头像
             let avatarImg = null;
             if(avatarUrl) {
                 avatarImg = new Image();
@@ -650,7 +645,7 @@
                 avatarImg.onload = () => { drawContent(); };
             }
 
-            drawContent(); // 先画第一帧
+            drawContent();
             return tex;
         }
 
