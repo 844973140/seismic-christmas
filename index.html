@@ -6,190 +6,79 @@
     <title>SEISMIC - Christmas Official</title>
     <script src="https://registry.npmmirror.com/@supabase/supabase-js/2.39.3/files/dist/umd/supabase.js"></script>
     <style>
-        body { 
-            margin: 0; overflow: hidden; background-color: #000; 
-            font-family: 'Arial', sans-serif; user-select: none;
-        }
-
-        #ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 10;
-        }
-
-        /* --- LOGO --- */
-        #logo-container {
-            position: absolute; 
-            top: 20px; left: 50%; transform: translateX(-50%);
-            text-align: center; width: 100%;
-            z-index: 20;
-            filter: drop-shadow(0 0 15px rgba(255, 200, 50, 0.6));
-            animation: logoPulse 3s infinite alternate;
-        }
-        #logo-img {
-            height: auto; width: 240px; display: block; margin: 0 auto;
-            crossorigin: anonymous; 
-        }
-        @keyframes logoPulse {
-            0% { transform: translateX(-50%) scale(1); filter: drop-shadow(0 0 10px rgba(255,200,50,0.4)); }
-            100% { transform: translateX(-50%) scale(1.05); filter: drop-shadow(0 0 25px rgba(255,200,50,0.9)); }
-        }
-
-        /* Buttons */
-        #music-btn {
-            position: absolute; top: 30px; right: 40px;
-            pointer-events: auto; cursor: pointer;
-            background: rgba(255, 255, 255, 0.05); 
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #FFD700; padding: 8px 16px; border-radius: 20px;
-            font-size: 12px; transition: 0.3s; letter-spacing: 1px;
-            backdrop-filter: blur(4px);
-        }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Arial', sans-serif; user-select: none; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        #logo-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); text-align: center; width: 100%; z-index: 20; filter: drop-shadow(0 0 15px rgba(255, 200, 50, 0.6)); animation: logoPulse 3s infinite alternate; }
+        #logo-img { height: auto; width: 240px; display: block; margin: 0 auto; crossorigin: anonymous; }
+        @keyframes logoPulse { 0% { transform: translateX(-50%) scale(1); filter: drop-shadow(0 0 10px rgba(255,200,50,0.4)); } 100% { transform: translateX(-50%) scale(1.05); filter: drop-shadow(0 0 25px rgba(255,200,50,0.9)); } }
+        #music-btn { position: absolute; top: 30px; right: 40px; pointer-events: auto; cursor: pointer; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: #FFD700; padding: 8px 16px; border-radius: 20px; font-size: 12px; transition: 0.3s; letter-spacing: 1px; backdrop-filter: blur(4px); }
         #music-btn:hover { background: #FFD700; color: #000; }
-
-        #find-btn {
-            position: absolute; 
-            top: 50%; right: 40px; 
-            transform: translateY(-50%) scale(0.8);
-            background: linear-gradient(135deg, #FFD700, #B8860B); 
-            color: #000; border: 2px solid #fff; 
-            padding: 18px 30px; border-radius: 50px;
-            font-size: 16px; font-weight: bold; letter-spacing: 2px;
-            pointer-events: auto; cursor: pointer;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
-            opacity: 0; pointer-events: none; 
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 20; text-transform: uppercase;
-        }
+        #find-btn { position: absolute; top: 50%; right: 40px; transform: translateY(-50%) scale(0.8); background: linear-gradient(135deg, #FFD700, #B8860B); color: #000; border: 2px solid #fff; padding: 18px 30px; border-radius: 50px; font-size: 16px; font-weight: bold; letter-spacing: 2px; pointer-events: auto; cursor: pointer; box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); opacity: 0; pointer-events: none; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 20; text-transform: uppercase; }
         #find-btn.show { opacity: 1; pointer-events: auto; transform: translateY(-50%) scale(1); }
         #find-btn:hover { box-shadow: 0 0 40px rgba(255, 215, 0, 0.8); transform: translateY(-50%) scale(1.1); background: linear-gradient(135deg, #ffe066, #d4af37); }
-
-        /* SAVE BUTTON */
-        #save-btn {
-            position: absolute; 
-            bottom: 150px; right: 40px; 
-            background: rgba(0, 123, 255, 0.9); 
-            color: #fff; border: 1px solid rgba(255,255,255,0.5);
-            padding: 12px 25px; border-radius: 30px;
-            font-size: 14px; font-weight: bold; letter-spacing: 1px;
-            pointer-events: auto; cursor: pointer;
-            box-shadow: 0 0 20px rgba(0, 123, 255, 0.4);
-            opacity: 0; pointer-events: none; transform: translateY(20px);
-            transition: all 0.5s ease;
-            z-index: 20;
-            display: flex; align-items: center; gap: 8px;
-        }
+        #save-btn { position: absolute; bottom: 150px; right: 40px; background: rgba(0, 123, 255, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.5); padding: 12px 25px; border-radius: 30px; font-size: 14px; font-weight: bold; letter-spacing: 1px; pointer-events: auto; cursor: pointer; box-shadow: 0 0 20px rgba(0, 123, 255, 0.4); opacity: 0; pointer-events: none; transform: translateY(20px); transition: all 0.5s ease; z-index: 20; display: flex; align-items: center; gap: 8px; }
         #save-btn.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
         #save-btn:hover { background: #0056b3; transform: scale(1.05); }
-
-        /* Input Panel */
-        #input-panel {
-            position: absolute; 
-            bottom: 40px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            padding: 25px; border-radius: 20px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            pointer-events: auto;
-            width: 320px;
-            display: flex; flex-direction: column; gap: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            transition: transform 0.5s, opacity 0.5s;
-        }
+        #input-panel { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 25px; border-radius: 20px; border: 1px solid rgba(255, 215, 0, 0.3); pointer-events: auto; width: 320px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); transition: transform 0.5s, opacity 0.5s; }
         body.hero-mode #input-panel { transform: translate(-50%, 150%); opacity: 0; pointer-events: none; }
-
-        input, textarea {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2); 
-            border-radius: 8px;
-            padding: 12px; color: #fff; font-size: 14px;
-            width: 100%; box-sizing: border-box; outline: none; transition: 0.3s;
-            font-family: 'Arial', sans-serif; text-align: center;
-        }
+        input, textarea { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; padding: 12px; color: #fff; font-size: 14px; width: 100%; box-sizing: border-box; outline: none; transition: 0.3s; font-family: 'Arial', sans-serif; text-align: center; }
         input:focus, textarea:focus { border-color: #FFD700; background: rgba(255,255,255,0.15); box-shadow: 0 0 15px rgba(255, 215, 0, 0.2); }
         input::placeholder, textarea::placeholder { color: #aaa; font-style: italic; opacity: 0.7; }
-
-        .action-btn {
-            background: linear-gradient(135deg, #FFD700, #B8860B);
-            border: none; color: #000; padding: 12px;
-            font-weight: bold; cursor: pointer;
-            text-transform: uppercase; letter-spacing: 1px;
-            transition: 0.2s; border-radius: 8px;
-        }
+        .action-btn { background: linear-gradient(135deg, #FFD700, #B8860B); border: none; color: #000; padding: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s; border-radius: 8px; }
         .action-btn:hover { transform: scale(1.02); background: linear-gradient(135deg, #ffe066, #d4af37); box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
         .action-btn:disabled { background: #555; color: #888; cursor: not-allowed; transform: none; box-shadow: none; }
-
-        /* LOADING UI */
-        #start-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #050505; z-index: 999;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            transition: opacity 0.8s;
-            pointer-events: auto;
-        }
-        #start-text { 
-            color: #FFD700; font-size: 20px; letter-spacing: 3px; 
-            text-transform: uppercase; margin-bottom: 20px;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-            display: none; cursor: pointer;
-            animation: pulse 1s infinite;
-        }
-        #loading-status {
-            color: #666; font-size: 10px; margin-top: 10px; letter-spacing: 1px; text-transform: uppercase;
-        }
+        #start-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #050505; z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.8s; pointer-events: auto; }
+        #start-text { color: #FFD700; font-size: 20px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); display: none; cursor: pointer; animation: pulse 1s infinite; }
+        #loading-status { color: #666; font-size: 10px; margin-top: 10px; letter-spacing: 1px; text-transform: uppercase; }
         #progress-container { width: 240px; height: 3px; background: #222; border-radius: 3px; overflow: hidden; }
         #progress-bar { width: 0%; height: 100%; background: #FFD700; box-shadow: 0 0 15px #FFD700; transition: width 0.2s; }
-        
-        #tips {
-            position: absolute; bottom: 15px; width: 100%; text-align: center;
-            color: #666; font-size: 11px; pointer-events: none;
-            text-transform: uppercase; letter-spacing: 1px;
-        }
+        #tips { position: absolute; bottom: 15px; width: 100%; text-align: center; color: #666; font-size: 11px; pointer-events: none; text-transform: uppercase; letter-spacing: 1px; }
         @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
     <script type="importmap">
-        {
-            "imports": {
-                "three": "https://registry.npmmirror.com/three/0.160.0/files/build/three.module.js",
-                "three/addons/": "https://registry.npmmirror.com/three/0.160.0/files/examples/jsm/"
+        { "imports": { "three": "https://registry.npmmirror.com/three/0.160.0/files/build/three.module.js", "three/addons/": "https://registry.npmmirror.com/three/0.160.0/files/examples/jsm/" } }
+    </script>
+    
+    <script>
+        window.forceEnter = function() {
+            console.log("Forcing entry...");
+            var p = document.getElementById('progress-container');
+            var s = document.getElementById('loading-status');
+            var t = document.getElementById('start-text');
+            if(p) p.style.display = 'none';
+            if(s) s.style.display = 'none';
+            if(t) t.style.display = 'block';
+        };
+        // 5秒倒计时
+        setTimeout(function() {
+            var overlay = document.getElementById('start-overlay');
+            // 如果遮罩层还在，且没有显示"点击进入"
+            if (overlay && overlay.style.opacity !== '0' && document.getElementById('start-text').style.display !== 'block') {
+                document.getElementById('loading-status').innerText = "Starting...";
+                window.forceEnter();
             }
-        }
+        }, 5000);
     </script>
 </head>
 <body>
-
-    <audio id="bgm" loop>
-        <source src="last_christmas.mp3" type="audio/mpeg">
-    </audio>
-
+    <audio id="bgm" loop><source src="last_christmas.mp3" type="audio/mpeg"></audio>
     <div id="start-overlay">
         <div id="progress-container"><div id="progress-bar"></div></div>
         <div id="loading-status">Connecting to Universe...</div>
         <div id="start-text" onclick="startApp()">Click to Enter Seismic Christmas</div>
     </div>
-
     <div id="ui-layer">
-        <div id="logo-container">
-            <img id="logo-img" 
-                 src="assets/logo.png" 
-                 alt="SEISMIC CHRISTMAS" 
-                 crossorigin="anonymous"
-                 onerror="if(this.src.includes('assets/logo.png')) this.src='assets/logo.jpg'; else if(this.src.includes('assets/logo.jpg')) this.src='logo.png';">
-        </div>
-        
+        <div id="logo-container"><img id="logo-img" src="assets/logo.png" alt="SEISMIC CHRISTMAS" crossorigin="anonymous" onerror="if(this.src.includes('assets/logo.png')) this.src='assets/logo.jpg'; else if(this.src.includes('assets/logo.jpg')) this.src='logo.png';"></div>
         <button id="music-btn" onclick="toggleMusic()">🎵 PAUSE MUSIC</button>
         <button id="find-btn" onclick="window.findMyCard()">🔍 FIND MY CARD</button>
         <button id="save-btn" onclick="saveCardImage()">📸 SAVE CARD</button>
-
         <div id="input-panel">
             <input type="text" id="user-name" placeholder="Name or @TwitterHandle" maxlength="20">
             <textarea id="msg-input" rows="2" placeholder="Write your wish here..." maxlength="40"></textarea>
             <button id="submit-btn" class="action-btn" onclick="submitCard()">HANG THE CARD</button>
         </div>
-        
         <div id="tips">Double Click BG to Scatter/Gather · Click Card to View</div>
     </div>
-
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -199,37 +88,27 @@
         import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
         import TWEEN from 'three/addons/libs/tween.module.js';
 
-        // =========================================================
-        // 
-        // 注册 Supabase.com -> New Project -> Settings -> API -> 获取 URL 和 Key
-        // =========================================================
-        const SUPABASE_URL = 'https://btqjjzmdbtuhxppvvqgr.supabase.co'; // 例如 https://xyz.supabase.co
+        const SUPABASE_URL = 'https://btqjjzmdbtuhxppvvqgr.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_6caaDPXJ_DFHOqt2JOLyfQ_3HCVcFf7';
 
         let supabase = null;
         let DB_READY = false;
 
-        // 初始化
-        if (SUPABASE_URL !== '你的_Project_URL' && window.supabase) {
+        if (SUPABASE_URL.includes('supabase.co') && window.supabase) {
             try {
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                 DB_READY = true;
-                console.log("Supabase Client Init Success");
+                console.log("Supabase connected");
             } catch(e) { console.error("DB Init Failed", e); }
-        } else {
-            console.warn("未配置 Supabase，进入单机模式");
         }
 
         const CONFIG = {
             goldCount: 500, silverCount: 500, gemCount: 300,       
             treeHeight: 85, maxRadius: 38, cardScaleTree: 0.45, 
-            artCount: 29, 
-            maxCardsDisplay: 300 
+            artCount: 29, maxCardsDisplay: 300 
         };
-
         const STATE = { TREE: 'tree', SCATTER: 'scatter', HERO: 'hero' };
         let currentState = STATE.TREE;
-
         let scene, camera, renderer, composer, controls;
         let mainGroup = new THREE.Group(); 
         let cardsGroup = new THREE.Group();
@@ -239,214 +118,129 @@
         const allObjectsData = []; 
         let loadingManager; 
         const textureLoader = new THREE.TextureLoader();
-
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
         let time = 0;
 
         window.startApp = function() {
             const overlay = document.getElementById('start-overlay');
-            overlay.style.opacity = 0;
-            overlay.style.pointerEvents = 'none';
+            overlay.style.opacity = 0; overlay.style.pointerEvents = 'none';
             setTimeout(() => overlay.remove(), 800);
             const bgm = document.getElementById('bgm');
-            bgm.volume = 0.3; 
-            bgm.play().catch(e => console.log("Audio requires interaction"));
+            bgm.volume = 0.3; bgm.play().catch(e => console.log("Audio requires interaction"));
         };
-
         window.toggleMusic = function(forcePlay = false) {
-            const bgm = document.getElementById('bgm');
-            const btn = document.getElementById('music-btn');
-            if (forcePlay || bgm.paused) {
-                bgm.play().then(()=> btn.innerText="🎵 PAUSE MUSIC").catch(()=>{});
-            } else {
-                bgm.pause(); btn.innerText="🎵 PLAY MUSIC";
-            }
+            const bgm = document.getElementById('bgm'); const btn = document.getElementById('music-btn');
+            if (forcePlay || bgm.paused) { bgm.play().then(()=> btn.innerText="🎵 PAUSE MUSIC").catch(()=>{}); } 
+            else { bgm.pause(); btn.innerText="🎵 PLAY MUSIC"; }
         };
-
         window.findMyCard = function() {
             if (currentUserCard) activateHeroMode(currentUserCard); 
             else alert("You haven't posted a wish yet!");
         };
-
         window.saveCardImage = function() {
             composer.render();
             const canvas3D = renderer.domElement;
             const compositeCanvas = document.createElement('canvas');
-            compositeCanvas.width = canvas3D.width;
-            compositeCanvas.height = canvas3D.height;
+            compositeCanvas.width = canvas3D.width; compositeCanvas.height = canvas3D.height;
             const ctx = compositeCanvas.getContext('2d');
             ctx.drawImage(canvas3D, 0, 0);
-            
             const logo = document.getElementById('logo-img');
             if (logo && logo.complete && logo.naturalHeight !== 0) {
                 const pixelRatio = renderer.getPixelRatio();
                 const rect = logo.getBoundingClientRect();
-                const drawWidth = rect.width * pixelRatio;
-                const drawHeight = rect.height * pixelRatio;
-                const drawX = (compositeCanvas.width - drawWidth) / 2;
-                const drawY = 20 * pixelRatio; 
+                const drawWidth = rect.width * pixelRatio; const drawHeight = rect.height * pixelRatio;
+                const drawX = (compositeCanvas.width - drawWidth) / 2; const drawY = 20 * pixelRatio; 
                 try { ctx.drawImage(logo, drawX, drawY, drawWidth, drawHeight); } catch(e) {}
             }
-
-            const link = document.createElement('a');
-            link.download = `Seismic_Wish.png`;
-            link.href = compositeCanvas.toDataURL('image/png');
-            link.click();
+            const link = document.createElement('a'); link.download = `Seismic_Wish.png`;
+            link.href = compositeCanvas.toDataURL('image/png'); link.click();
         };
 
         function init() {
             loadingManager = new THREE.LoadingManager();
             loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
                 const progress = (itemsLoaded / itemsTotal) * 100;
-                document.getElementById('progress-bar').style.width = progress + '%';
+                const bar = document.getElementById('progress-bar');
+                if(bar) bar.style.width = progress + '%';
             };
+            
+            // 【关键修复】不要在这里等待 fetchCloudCards，防止死锁
+            // 只是简单的日志记录
             loadingManager.onLoad = function() {
-                setTimeout(() => {
-                    document.getElementById('loading-status').innerText = "Reading Wishes...";
-                    // 尝试获取云端卡片
-                    fetchCloudCards().finally(() => {
-                        document.getElementById('progress-container').style.display = 'none';
-                        document.getElementById('loading-status').style.display = 'none';
-                        document.getElementById('start-text').style.display = 'block';
-                    });
-                }, 500);
+                console.log("Basic assets loaded.");
             };
             loadingManager.onError = function(url) { console.warn("Asset load failed:", url); };
+            
             textureLoader.manager = loadingManager;
-
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x000000); 
-            scene.fog = new THREE.FogExp2(0x000000, 0.002); 
-
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 2000);
-            camera.position.set(0, 30, 160);
-
+            scene = new THREE.Scene(); scene.background = new THREE.Color(0x000000); scene.fog = new THREE.FogExp2(0x000000, 0.002); 
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 2000); camera.position.set(0, 30, 160);
             renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance", preserveDrawingBuffer: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             document.body.appendChild(renderer.domElement);
-
             const renderScene = new RenderPass(scene, camera);
             const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
             bloomPass.threshold = 0.5; bloomPass.strength = 0.35; bloomPass.radius = 0.5;
-
-            composer = new EffectComposer(renderer);
-            composer.addPass(renderScene);
-            composer.addPass(bloomPass);
-
+            composer = new EffectComposer(renderer); composer.addPass(renderScene); composer.addPass(bloomPass);
             scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
-            
             const ambient = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambient);
             const spotLight = new THREE.SpotLight(0xffddaa, 150); spotLight.position.set(30, 60, 50); scene.add(spotLight);
-
             createStarField(); createJewelSystem(); createGround(); createDust();
-            
             scene.add(backgroundGroup); scene.add(mainGroup); scene.add(cardsGroup);
-
-            controls = new OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true; controls.autoRotate = true; controls.autoRotateSpeed = 0.5; controls.maxPolarAngle = Math.PI / 1.7;
-
-            window.addEventListener('resize', onResize);
-            window.addEventListener('click', onClick);
-            window.addEventListener('dblclick', toggleTreeState);
-
+            controls = new OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.autoRotate = true; controls.autoRotateSpeed = 0.5; controls.maxPolarAngle = Math.PI / 1.7;
+            window.addEventListener('resize', onResize); window.addEventListener('click', onClick); window.addEventListener('dblclick', toggleTreeState);
             animate();
+
+            // 【关键修复】把联网请求移到 init 的最后直接执行，不依赖 loadingManager
+            setTimeout(() => {
+                document.getElementById('loading-status').innerText = "Reading Wishes...";
+                fetchCloudCards().finally(() => {
+                    // 请求结束后（无论成功失败），都打开入口
+                    window.forceEnter();
+                });
+            }, 500);
         }
 
-        // --- 核心逻辑：获取云端数据 (Supabase) ---
         async function fetchCloudCards() {
-            // 1. 本地
             const localSaved = localStorage.getItem('seismic_card');
             const localId = localStorage.getItem('seismic_card_id');
-            if(localSaved) {
-                try {
-                    const { name, msg } = JSON.parse(localSaved);
-                    createCardMesh(msg, name, true, 0, 1, null);
-                } catch(e){}
-            }
-
+            if(localSaved) { try { const { name, msg } = JSON.parse(localSaved); createCardMesh(msg, name, true, 0, 1, null); } catch(e){} }
+            
             if (!DB_READY) return;
-
-            // 2. 云端
+            
             try {
-                // 3秒超时
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error("Timeout")), 3000)
-                );
-
-                const dbQuery = supabase
-                    .from('wishes')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(500);
-
+                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000));
+                const dbQuery = supabase.from('wishes').select('*').order('created_at', { ascending: false }).limit(500);
                 const { data, error } = await Promise.race([dbQuery, timeoutPromise]);
-
                 if (error) throw error;
                 if (!data) return;
-
                 let cardsToDisplay = data;
-                if (data.length > CONFIG.maxCardsDisplay) {
-                     cardsToDisplay = data.sort(() => 0.5 - Math.random()).slice(0, CONFIG.maxCardsDisplay);
-                }
-
+                if (data.length > CONFIG.maxCardsDisplay) cardsToDisplay = data.sort(() => 0.5 - Math.random()).slice(0, CONFIG.maxCardsDisplay);
                 const currentCount = cardsGroup.children.length;
-                cardsToDisplay.forEach((row, i) => {
-                    // 避免重复显示自己
-                    if (row.id == localId) return; 
-                    createCardMesh(row.message, row.name, false, i + currentCount, cardsToDisplay.length, row.avatar_url);
-                });
-
-            } catch (error) {
-                console.log("Cloud fetch skipped:", error);
-                document.getElementById('loading-status').innerText = "Offline Mode";
-            }
+                cardsToDisplay.forEach((row, i) => { if (row.id == localId) return; createCardMesh(row.message, row.name, false, i + currentCount, cardsToDisplay.length, row.avatar_url); });
+            } catch (error) { console.log("Offline/Error:", error); }
         }
 
         window.submitCard = async function() {
             const btn = document.getElementById('submit-btn');
             const nameInput = document.getElementById('user-name').value.trim() || "Guest";
             const msg = document.getElementById('msg-input').value.trim();
-            
             if(!msg) { alert("Please write a wish!"); return; }
-
             btn.disabled = true; btn.innerText = "SENDING...";
-
-            let avatarUrl = null;
-            let twitterHandle = nameInput.replace('@', '').trim();
-            if (nameInput.includes('@') && twitterHandle.length > 0) {
-                avatarUrl = `https://unavatar.io/twitter/${twitterHandle}`;
-            }
-
+            let avatarUrl = null; let twitterHandle = nameInput.replace('@', '').trim();
+            if (nameInput.includes('@') && twitterHandle.length > 0) { avatarUrl = `https://unavatar.io/twitter/${twitterHandle}`; }
             if (DB_READY) {
                 try {
-                    const { data, error } = await supabase
-                        .from('wishes')
-                        .insert([
-                            { name: nameInput, message: msg, avatar_url: avatarUrl }
-                        ])
-                        .select(); // 返回插入的数据以便获取ID
-
+                    const { data, error } = await supabase.from('wishes').insert([{ name: nameInput, message: msg, avatar_url: avatarUrl }]).select();
                     if (error) throw error;
-                    
                     if (data && data.length > 0) {
                         const savedWish = data[0];
                         localStorage.setItem('seismic_card_id', savedWish.id);
                         localStorage.setItem('seismic_card', JSON.stringify({name: nameInput, msg}));
                     }
-
-                    if(!currentUserCard) {
-                        createCardMesh(msg, nameInput, true, 0, 1, avatarUrl);
-                    }
-                    
-                    document.getElementById('msg-input').value = "";
-                    document.getElementById('user-name').value = "";
-                    btn.innerText = "SENT!";
-                } catch (error) {
-                    alert("Submission Failed: " + error.message);
-                    btn.disabled = false; btn.innerText = "HANG THE CARD";
-                }
+                    if(!currentUserCard) createCardMesh(msg, nameInput, true, 0, 1, avatarUrl);
+                    document.getElementById('msg-input').value = ""; document.getElementById('user-name').value = ""; btn.innerText = "SENT!";
+                } catch (error) { alert("Submission Failed (Offline Mode): " + error.message); btn.disabled = false; btn.innerText = "HANG THE CARD"; }
             } else {
                 localStorage.setItem('seismic_card', JSON.stringify({name: nameInput, msg}));
                 if(!currentUserCard) createCardMesh(msg, nameInput, true, 0, 1, avatarUrl);
@@ -454,299 +248,20 @@
             }
         };
 
-
-        // --- 3D SCENE HELPERS ---
-
-        function createStarField() {
-            const starsGeo = new THREE.BufferGeometry(); const count = 5000; const posArray = new Float32Array(count * 3);
-            for(let i=0; i<count; i++) {
-                const r = 200 + Math.random() * 600; const theta = 2 * Math.PI * Math.random(); const phi = Math.acos(2 * Math.random() - 1);
-                posArray[i*3] = r * Math.sin(phi) * Math.cos(theta); posArray[i*3+1] = r * Math.sin(phi) * Math.sin(theta); posArray[i*3+2] = r * Math.cos(phi);
-            }
-            starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const starField = new THREE.Points(starsGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, transparent: true, opacity: 0.8 }));
-            backgroundGroup.add(starField);
-        }
-
-        function toggleTreeState() {
-            if (currentState === STATE.SCATTER || currentState === STATE.HERO) forceToTree(); else forceToScatter();
-        }
-
-        function forceToTree() {
-            currentState = STATE.TREE;
-            document.body.classList.remove('hero-mode'); 
-            document.getElementById('save-btn').classList.remove('show'); 
-            controls.autoRotate = true;
-            new TWEEN.Tween(camera.position).to({x:0, y:30, z:160}, 1500).easing(TWEEN.Easing.Cubic.Out).start();
-            new TWEEN.Tween(controls.target).to({x:0, y:0, z:0}, 1500).start();
-            allObjectsData.forEach(obj => {
-                new TWEEN.Tween(obj.mesh.position).to(obj.treePos, 1500).easing(TWEEN.Easing.Cubic.Out).start();
-                if(obj.treeRot) new TWEEN.Tween(obj.mesh.rotation).to({x: obj.treeRot.x, y: obj.treeRot.y, z: obj.treeRot.z}, 1500).start();
-                else new TWEEN.Tween(obj.mesh.rotation).to({x:0, y:0, z:0}, 1500).start();
-                if(obj.mesh.userData.isCard) new TWEEN.Tween(obj.mesh.scale).to({x: CONFIG.cardScaleTree, y: CONFIG.cardScaleTree, z: CONFIG.cardScaleTree}, 1500).start();
-            });
-            if(currentUserCard) document.getElementById('find-btn').classList.add('show');
-        }
-
-        function forceToScatter() {
-            currentState = STATE.SCATTER;
-            new TWEEN.Tween(camera.position).to({x:0, y:40, z:200}, 2000).easing(TWEEN.Easing.Cubic.Out).start();
-            allObjectsData.forEach(obj => {
-                new TWEEN.Tween(obj.mesh.position).to(obj.scatterPos, 2000).easing(TWEEN.Easing.Exponential.Out).start();
-                new TWEEN.Tween(obj.mesh.rotation).to({ x: Math.random()*Math.PI*2, y: Math.random()*Math.PI*2, z: Math.random()*Math.PI*2 }, 2000).start();
-            });
-        }
-
-        window.activateHeroMode = function(targetCard) {
-            if(!targetCard) return;
-            currentState = STATE.HERO;
-            document.body.classList.add('hero-mode'); 
-            
-            if(currentUserCard && targetCard === currentUserCard) {
-                document.getElementById('save-btn').classList.add('show');
-            } else {
-                document.getElementById('save-btn').classList.remove('show');
-            }
-
-            controls.autoRotate = false;
-            new TWEEN.Tween(camera.position).to({x:0, y:0, z:100}, 1500).easing(TWEEN.Easing.Cubic.Out).start();
-            new TWEEN.Tween(controls.target).to({x:0, y:0, z:0}, 1500).easing(TWEEN.Easing.Cubic.Out).start();
-            new TWEEN.Tween(targetCard.position).to({x:0, y:0, z:82}, 1500).easing(TWEEN.Easing.Cubic.Out).start();
-            new TWEEN.Tween(targetCard.rotation).to({x:0, y:0, z:0}, 1500).start();
-            new TWEEN.Tween(targetCard.scale).to({x:2.2, y:2.2, z:2.2}, 1500).start();
-            setTimeout(() => {
-                allObjectsData.forEach(obj => {
-                    if(obj.mesh !== targetCard) {
-                        new TWEEN.Tween(obj.mesh.position).to(obj.scatterPos, 2000).easing(TWEEN.Easing.Exponential.Out).start();
-                        new TWEEN.Tween(obj.mesh.rotation).to({ x: Math.random()*Math.PI*2, y: Math.random()*Math.PI*2, z: Math.random()*Math.PI*2 }, 2000).start();
-                    }
-                });
-            }, 200);
-            document.getElementById('find-btn').classList.remove('show');
-        };
-
-        function calculatePositions(index, total, type = 'deco') {
-            const h = (Math.random() - 0.5) * CONFIG.treeHeight;
-            const normH = (h + CONFIG.treeHeight/2) / CONFIG.treeHeight;
-            const maxR = CONFIG.maxRadius * (1 - normH);
-            const theta = index * Math.PI * (3 - Math.sqrt(5)); 
-            const rOffset = type === 'card' ? 4 : 0; 
-            const r = (Math.sqrt(Math.random()) * maxR) + rOffset; 
-            let treePos;
-            if (type === 'card') {
-                const y = ((index / total) - 0.5) * CONFIG.treeHeight;
-                const spiralTheta = index * 0.2; 
-                const rCard = (1 - (y + CONFIG.treeHeight/2)/CONFIG.treeHeight) * CONFIG.maxRadius + 6; 
-                treePos = new THREE.Vector3(rCard * Math.cos(spiralTheta), y, rCard * Math.sin(spiralTheta));
-                var treeRot = new THREE.Euler(0, -spiralTheta + Math.PI/2, 0);
-            } else {
-                treePos = new THREE.Vector3(r * Math.cos(theta), h, r * Math.sin(theta));
-                var treeRot = new THREE.Euler(0, -theta + Math.PI/2, 0); 
-                if(type !== 'card') treeRot.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-            }
-            const sr = 60 + Math.random() * 90; 
-            const u = Math.random(); const v = Math.random();
-            const sTheta = 2 * Math.PI * u; const sPhi = Math.acos(2 * v - 1);
-            const scatterPos = new THREE.Vector3(sr * Math.sin(sPhi) * Math.cos(sTheta), sr * Math.sin(sPhi) * Math.sin(sTheta), sr * Math.cos(sPhi));
-            return { treePos, treeRot, scatterPos };
-        }
-
-        function createJewelSystem() {
-            const geoms = [ new THREE.SphereGeometry(0.6, 16, 16), new THREE.BoxGeometry(0.8, 0.8, 0.8), new THREE.OctahedronGeometry(0.7, 0) ];
-            const mats = [
-                new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 1, roughness: 0.2, emissive: 0xaa5500, emissiveIntensity: 0.3 }), 
-                new THREE.MeshStandardMaterial({ color: 0x00a86b, metalness: 0.2, roughness: 0.1, emissive: 0x004411, emissiveIntensity: 0.8 }), 
-                new THREE.MeshStandardMaterial({ color: 0xff0044, metalness: 0.1, roughness: 0, transmission: 0.6, emissive: 0x440011, emissiveIntensity: 0.6 })
-            ];
-            const totalJewels = CONFIG.goldCount + CONFIG.silverCount + CONFIG.gemCount;
-            for(let i=0; i<totalJewels; i++) {
-                const mesh = new THREE.Mesh(geoms[i%3], mats[i%3]);
-                const data = calculatePositions(i, totalJewels, 'deco');
-                mesh.position.copy(data.treePos); mesh.rotation.copy(data.treeRot); mesh.scale.setScalar(0.5 + Math.random() * 0.5);
-                allObjectsData.push({ mesh: mesh, treePos: data.treePos, scatterPos: data.scatterPos, baseScale: mesh.scale.x, phase: Math.random() * Math.PI * 2 });
-                mainGroup.add(mesh);
-            }
-            const star = new THREE.Mesh(new THREE.OctahedronGeometry(3.5, 0), new THREE.MeshBasicMaterial({ color: 0xffffee }));
-            star.add(new THREE.PointLight(0xffffee, 2, 50)); star.position.y = CONFIG.treeHeight/2 + 2;
-            mainGroup.add(star);
-            allObjectsData.push({ mesh: star, treePos: new THREE.Vector3(0, CONFIG.treeHeight/2 + 2, 0), scatterPos: new THREE.Vector3(0, 100, 0), baseScale: 1, phase: 0 });
-        }
-
-        function createCardMesh(msg, name, isUser, index, total, avatarUrl = null) {
-            const randomArtIdBack = Math.floor(Math.random() * CONFIG.artCount) + 1;
-            const randomArtIdFront = Math.floor(Math.random() * CONFIG.artCount) + 1;
-
-            const frontTex = createCardTexture(msg, name, true, avatarUrl, randomArtIdFront); 
-            
-            // 默认白色背面
-            const backMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-            
-            // 兼容路径
-            const path = `assets/art_${randomArtIdBack}.jpg`;
-            const pathRoot = `art_${randomArtIdBack}.jpg`;
-            
-            textureLoader.load(path, (tex)=>{
-                tex.colorSpace = THREE.SRGBColorSpace;
-                backMesh.material.map = tex; backMesh.material.needsUpdate = true;
-            }, undefined, ()=>{
-                textureLoader.load(pathRoot, (tex)=>{
-                     tex.colorSpace = THREE.SRGBColorSpace;
-                     backMesh.material.map = tex; backMesh.material.needsUpdate = true;
-                });
-            });
-
-            const geo = new THREE.BoxGeometry(3.2, 2.2, 0.1);
-            const goldSide = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 1.0, roughness: 0.15, emissive: 0xaa7700, emissiveIntensity: 0.2 });
-            const frontMat = new THREE.MeshBasicMaterial({ map: frontTex });
-            
-            const frame = new THREE.Mesh(geo, goldSide);
-            const frontMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), frontMat); frontMesh.position.z = 0.06;
-            const backMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), backMat); backMesh.position.z = -0.06; backMesh.rotation.y = Math.PI;
-
-            const cardGroup = new THREE.Group();
-            cardGroup.add(frame); cardGroup.add(frontMesh); cardGroup.add(backMesh);
-            
-            const data = calculatePositions(index, total, 'card');
-            cardGroup.userData = { isCard: true };
-            
-            if(isUser && currentUserCard === null) {
-                cardGroup.position.set(0, 100, 0); cardGroup.scale.set(0,0,0); currentUserCard = cardGroup;
-                const objData = { mesh: cardGroup, treePos: data.treePos, treeRot: data.treeRot, scatterPos: data.scatterPos, baseScale: CONFIG.cardScaleTree, phase: 0 };
-                allObjectsData.push(objData);
-                
-                const randomT = Math.random(); const y = (randomT - 0.5) * CONFIG.treeHeight;
-                const rCard = (1 - (y + CONFIG.treeHeight/2)/CONFIG.treeHeight) * CONFIG.maxRadius + 6; 
-                const theta = randomT * Math.PI * 15; 
-                objData.treePos.set(rCard * Math.cos(theta), y, rCard * Math.sin(theta)); objData.treeRot.set(0, -theta + Math.PI/2, 0);
-                
-                new TWEEN.Tween(cardGroup.position).to(objData.treePos, 1500).easing(TWEEN.Easing.Bounce.Out).start();
-                new TWEEN.Tween(cardGroup.rotation).to({x:0, y:objData.treeRot.y, z:0}, 1500).start();
-                new TWEEN.Tween(cardGroup.scale).to({x:CONFIG.cardScaleTree, y:CONFIG.cardScaleTree, z:CONFIG.cardScaleTree}, 1500).start();
-                document.getElementById('find-btn').classList.add('show');
-            } else {
-                cardGroup.position.copy(data.treePos); cardGroup.rotation.copy(data.treeRot); cardGroup.scale.setScalar(CONFIG.cardScaleTree);
-                const objData = { mesh: cardGroup, treePos: data.treePos, treeRot: data.treeRot, scatterPos: data.scatterPos, baseScale: CONFIG.cardScaleTree, phase: 0 };
-                allObjectsData.push(objData);
-            }
-            cardsGroup.add(cardGroup);
-        }
-
-        function createCardTexture(msg, name, isFront, avatarUrl = null, bgArtId = 1) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 340; 
-            const ctx = canvas.getContext('2d');
-            
-            const grd = ctx.createRadialGradient(256, 170, 50, 256, 170, 350);
-            grd.addColorStop(0, '#1a2a1a'); grd.addColorStop(1, '#020a02'); 
-            ctx.fillStyle = grd; ctx.fillRect(0,0,512,340);
-
-            const tex = new THREE.CanvasTexture(canvas); 
-            tex.colorSpace = THREE.SRGBColorSpace;
-
-            function drawTextAndAvatar(loadedAvatarImg = null) {
-                ctx.lineWidth = 12; ctx.strokeStyle = '#b8860b'; ctx.strokeRect(6,6,500,328);
-
-                if (loadedAvatarImg) {
-                    ctx.save();
-                    ctx.beginPath(); ctx.arc(80, 80, 45, 0, Math.PI*2); ctx.clip();
-                    ctx.drawImage(loadedAvatarImg, 35, 35, 90, 90);
-                    ctx.restore();
-                    ctx.lineWidth=4; ctx.strokeStyle='#FFD700'; ctx.beginPath(); ctx.arc(80, 80, 45, 0, Math.PI*2); ctx.stroke();
-                } else {
-                    ctx.save(); ctx.beginPath(); ctx.arc(80, 80, 45, 0, Math.PI*2); ctx.fillStyle = '#b8860b'; ctx.fill(); 
-                    ctx.fillStyle = '#fff'; ctx.font='bold 40px Arial'; ctx.textAlign='center'; 
-                    ctx.fillText(name.charAt(0).toUpperCase(), 80, 95); ctx.restore();
-                }
-                
-                ctx.fillStyle = '#FFD700'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'left'; 
-                ctx.shadowColor="black"; ctx.shadowBlur=4; ctx.shadowOffsetX=1; ctx.shadowOffsetY=1;
-                ctx.fillText(name, 140, 90);
-                ctx.shadowBlur=0;
-
-                ctx.fillStyle = '#ffffff'; ctx.font = 'italic bold 34px "Times New Roman", serif'; ctx.textAlign = 'center'; 
-                ctx.shadowColor="black"; ctx.shadowBlur=6; ctx.shadowOffsetX=3; ctx.shadowOffsetY=3;
-                wrapText(ctx, msg, 256, 180, 440, 48);
-                
-                tex.needsUpdate = true;
-            }
-
-            const bgImg = new Image();
-            bgImg.crossOrigin = "Anonymous";
-            const bgPath = `assets/art_${bgArtId}.jpg`;
-            const bgPathRoot = `art_${bgArtId}.jpg`;
-
-            bgImg.src = bgPath;
-            bgImg.onload = () => {
-                ctx.save(); ctx.globalAlpha = 0.4; ctx.drawImage(bgImg, 0, 0, 512, 340); ctx.restore();
-                loadAvatar();
-            };
-            bgImg.onerror = () => {
-                 const bgImg2 = new Image(); bgImg2.crossOrigin = "Anonymous"; bgImg2.src = bgPathRoot;
-                 bgImg2.onload = () => { ctx.save(); ctx.globalAlpha = 0.4; ctx.drawImage(bgImg2, 0, 0, 512, 340); ctx.restore(); loadAvatar(); };
-                 bgImg2.onerror = () => { loadAvatar(); };
-            };
-
-            function loadAvatar() {
-                if(avatarUrl) {
-                    const avImg = new Image(); avImg.crossOrigin = "Anonymous"; avImg.src = avatarUrl;
-                    avImg.onload = () => drawTextAndAvatar(avImg);
-                    avImg.onerror = () => { drawTextAndAvatar(null); };
-                } else {
-                    drawTextAndAvatar(null);
-                }
-            }
-            return tex;
-        }
-
-        function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-            let words = text.split(''); let line = '';
-            for(let n = 0; n < words.length; n++) {
-                let testLine = line + words[n]; let metrics = ctx.measureText(testLine);
-                if (metrics.width > maxWidth && n > 0) { ctx.fillText(line, x, y); line = words[n]; y += lineHeight; } else { line = testLine; }
-            } ctx.fillText(line, x, y);
-        }
-
-        function onClick(event) {
-            if(event.target.closest('#ui-layer') || event.target.closest('#start-overlay')) return;
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1; mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(cardsGroup.children, true);
-            if(intersects.length > 0) {
-                let target = intersects[0].object; while(target.parent && target.parent !== cardsGroup) { target = target.parent; }
-                if (currentState === STATE.HERO && Math.abs(target.position.z - 82) < 5) { new TWEEN.Tween(target.rotation).to({y: target.rotation.y + Math.PI}, 500).start(); }
-                else { activateHeroMode(target); }
-            }
-        }
-
-        function createDust() {
-            const geo = new THREE.BufferGeometry(); const pos = [];
-            for(let i=0; i<1000; i++) pos.push((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100);
-            geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-            dustSystem = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xffd700, size: 0.3, transparent: true, opacity: 0.5 }));
-            mainGroup.add(dustSystem);
-        }
-
-        function createGround() {
-            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), new THREE.MeshStandardMaterial({ color: 0x080808, roughness: 0.1, metalness: 0.5 }));
-            mesh.rotation.x = -Math.PI/2; mesh.position.y = -CONFIG.treeHeight/2 - 5; scene.add(mesh);
-        }
-
-        function onResize() {
-            camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function animate(t) {
-            requestAnimationFrame(animate); time += 0.01; TWEEN.update(t); controls.update(); backgroundGroup.rotation.y = time * 0.01;
-            if(currentState === STATE.SCATTER || currentState === STATE.HERO) {
-                allObjectsData.forEach(obj => {
-                    if(currentState === STATE.HERO && Math.abs(obj.mesh.position.z - 82) < 5) return;
-                    obj.mesh.position.y += Math.sin(time + obj.phase) * 0.05;
-                });
-            }
-            dustSystem.rotation.y = time * 0.05; composer.render();
-        }
-
+        function createStarField() { const starsGeo = new THREE.BufferGeometry(); const count = 5000; const posArray = new Float32Array(count * 3); for(let i=0; i<count; i++) { const r = 200 + Math.random() * 600; const theta = 2 * Math.PI * Math.random(); const phi = Math.acos(2 * Math.random() - 1); posArray[i*3] = r * Math.sin(phi) * Math.cos(theta); posArray[i*3+1] = r * Math.sin(phi) * Math.sin(theta); posArray[i*3+2] = r * Math.cos(phi); } starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3)); const starField = new THREE.Points(starsGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, transparent: true, opacity: 0.8 })); backgroundGroup.add(starField); }
+        function toggleTreeState() { if (currentState === STATE.SCATTER || currentState === STATE.HERO) forceToTree(); else forceToScatter(); }
+        function forceToTree() { currentState = STATE.TREE; document.body.classList.remove('hero-mode'); document.getElementById('save-btn').classList.remove('show'); controls.autoRotate = true; new TWEEN.Tween(camera.position).to({x:0, y:30, z:160}, 1500).easing(TWEEN.Easing.Cubic.Out).start(); new TWEEN.Tween(controls.target).to({x:0, y:0, z:0}, 1500).start(); allObjectsData.forEach(obj => { new TWEEN.Tween(obj.mesh.position).to(obj.treePos, 1500).easing(TWEEN.Easing.Cubic.Out).start(); if(obj.treeRot) new TWEEN.Tween(obj.mesh.rotation).to({x: obj.treeRot.x, y: obj.treeRot.y, z: obj.treeRot.z}, 1500).start(); else new TWEEN.Tween(obj.mesh.rotation).to({x:0, y:0, z:0}, 1500).start(); if(obj.mesh.userData.isCard) new TWEEN.Tween(obj.mesh.scale).to({x: CONFIG.cardScaleTree, y: CONFIG.cardScaleTree, z: CONFIG.cardScaleTree}, 1500).start(); }); if(currentUserCard) document.getElementById('find-btn').classList.add('show'); }
+        function forceToScatter() { currentState = STATE.SCATTER; new TWEEN.Tween(camera.position).to({x:0, y:40, z:200}, 2000).easing(TWEEN.Easing.Cubic.Out).start(); allObjectsData.forEach(obj => { new TWEEN.Tween(obj.mesh.position).to(obj.scatterPos, 2000).easing(TWEEN.Easing.Exponential.Out).start(); new TWEEN.Tween(obj.mesh.rotation).to({ x: Math.random()*Math.PI*2, y: Math.random()*Math.PI*2, z: Math.random()*Math.PI*2 }, 2000).start(); }); }
+        function activateHeroMode(targetCard) { if(!targetCard) return; currentState = STATE.HERO; document.body.classList.add('hero-mode'); if(currentUserCard && targetCard === currentUserCard) { document.getElementById('save-btn').classList.add('show'); } else { document.getElementById('save-btn').classList.remove('show'); } controls.autoRotate = false; new TWEEN.Tween(camera.position).to({x:0, y:0, z:100}, 1500).easing(TWEEN.Easing.Cubic.Out).start(); new TWEEN.Tween(controls.target).to({x:0, y:0, z:0}, 1500).easing(TWEEN.Easing.Cubic.Out).start(); new TWEEN.Tween(targetCard.position).to({x:0, y:0, z:82}, 1500).easing(TWEEN.Easing.Cubic.Out).start(); new TWEEN.Tween(targetCard.rotation).to({x:0, y:0, z:0}, 1500).start(); new TWEEN.Tween(targetCard.scale).to({x:2.2, y:2.2, z:2.2}, 1500).start(); setTimeout(() => { allObjectsData.forEach(obj => { if(obj.mesh !== targetCard) { new TWEEN.Tween(obj.mesh.position).to(obj.scatterPos, 2000).easing(TWEEN.Easing.Exponential.Out).start(); new TWEEN.Tween(obj.mesh.rotation).to({ x: Math.random()*Math.PI*2, y: Math.random()*Math.PI*2, z: Math.random()*Math.PI*2 }, 2000).start(); } }); }, 200); document.getElementById('find-btn').classList.remove('show'); };
+        function calculatePositions(i,t,y){const h=(Math.random()-.5)*CONFIG.treeHeight,n=(h+CONFIG.treeHeight/2)/CONFIG.treeHeight,m=CONFIG.maxRadius*(1-n),e=i*Math.PI*(3-Math.sqrt(5)),o="card"===y?4:0,r=Math.sqrt(Math.random())*m+o;let a;if("card"===y){const n=(i/t-.5)*CONFIG.treeHeight,m=.2*i,e=(1-(n+CONFIG.treeHeight/2)/CONFIG.treeHeight)*CONFIG.maxRadius+6;a=new THREE.Vector3(e*Math.cos(m),n,e*Math.sin(m));var s=new THREE.Euler(0,-m+Math.PI/2,0)}else a=new THREE.Vector3(r*Math.cos(e),h,r*Math.sin(e)),s=new THREE.Euler(0,-e+Math.PI/2,0),"card"!==y&&s.set(Math.random()*Math.PI,Math.random()*Math.PI,0);const c=60+90*Math.random(),d=Math.random(),l=Math.random(),u=2*Math.PI*d,w=Math.acos(2*l-1),E=new THREE.Vector3(c*Math.sin(w)*Math.cos(u),c*Math.sin(w)*Math.sin(u),c*Math.cos(w));return{treePos:a,treeRot:s,scatterPos:E}}
+        function createJewelSystem() { const geoms = [ new THREE.SphereGeometry(0.6, 16, 16), new THREE.BoxGeometry(0.8, 0.8, 0.8), new THREE.OctahedronGeometry(0.7, 0) ]; const mats = [ new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 1, roughness: 0.2, emissive: 0xaa5500, emissiveIntensity: 0.3 }), new THREE.MeshStandardMaterial({ color: 0x00a86b, metalness: 0.2, roughness: 0.1, emissive: 0x004411, emissiveIntensity: 0.8 }), new THREE.MeshStandardMaterial({ color: 0xff0044, metalness: 0.1, roughness: 0, transmission: 0.6, emissive: 0x440011, emissiveIntensity: 0.6 }) ]; const totalJewels = CONFIG.goldCount + CONFIG.silverCount + CONFIG.gemCount; for(let i=0; i<totalJewels; i++) { const mesh = new THREE.Mesh(geoms[i%3], mats[i%3]); const data = calculatePositions(i, totalJewels, 'deco'); mesh.position.copy(data.treePos); mesh.rotation.copy(data.treeRot); mesh.scale.setScalar(0.5 + Math.random() * 0.5); allObjectsData.push({ mesh: mesh, treePos: data.treePos, scatterPos: data.scatterPos, baseScale: mesh.scale.x, phase: Math.random() * Math.PI * 2 }); mainGroup.add(mesh); } const star = new THREE.Mesh(new THREE.OctahedronGeometry(3.5, 0), new THREE.MeshBasicMaterial({ color: 0xffffee })); star.add(new THREE.PointLight(0xffffee, 2, 50)); star.position.y = CONFIG.treeHeight/2 + 2; mainGroup.add(star); allObjectsData.push({ mesh: star, treePos: new THREE.Vector3(0, CONFIG.treeHeight/2 + 2, 0), scatterPos: new THREE.Vector3(0, 100, 0), baseScale: 1, phase: 0 }); }
+        function createCardMesh(msg, name, isUser, index, total, avatarUrl = null) { const randomArtIdBack = Math.floor(Math.random() * CONFIG.artCount) + 1; const randomArtIdFront = Math.floor(Math.random() * CONFIG.artCount) + 1; const frontTex = createCardTexture(msg, name, true, avatarUrl, randomArtIdFront); const backMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); const path = `assets/art_${randomArtIdBack}.jpg`; const pathRoot = `art_${randomArtIdBack}.jpg`; textureLoader.load(path, (tex)=>{ tex.colorSpace = THREE.SRGBColorSpace; backMesh.material.map = tex; backMesh.material.needsUpdate = true; }, undefined, ()=>{ textureLoader.load(pathRoot, (tex)=>{ tex.colorSpace = THREE.SRGBColorSpace; backMesh.material.map = tex; backMesh.material.needsUpdate = true; }); }); const geo = new THREE.BoxGeometry(3.2, 2.2, 0.1); const goldSide = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 1.0, roughness: 0.15, emissive: 0xaa7700, emissiveIntensity: 0.2 }); const frontMat = new THREE.MeshBasicMaterial({ map: frontTex }); const frame = new THREE.Mesh(geo, goldSide); const frontMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), frontMat); frontMesh.position.z = 0.06; const backMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), backMat); backMesh.position.z = -0.06; backMesh.rotation.y = Math.PI; const cardGroup = new THREE.Group(); cardGroup.add(frame); cardGroup.add(frontMesh); cardGroup.add(backMesh); const data = calculatePositions(index, total, 'card'); cardGroup.userData = { isCard: true }; if(isUser && currentUserCard === null) { cardGroup.position.set(0, 100, 0); cardGroup.scale.set(0,0,0); currentUserCard = cardGroup; const objData = { mesh: cardGroup, treePos: data.treePos, treeRot: data.treeRot, scatterPos: data.scatterPos, baseScale: CONFIG.cardScaleTree, phase: 0 }; allObjectsData.push(objData); const randomT = Math.random(); const y = (randomT - 0.5) * CONFIG.treeHeight; const rCard = (1 - (y + CONFIG.treeHeight/2)/CONFIG.treeHeight) * CONFIG.maxRadius + 6; const theta = randomT * Math.PI * 15; objData.treePos.set(rCard * Math.cos(theta), y, rCard * Math.sin(theta)); objData.treeRot.set(0, -theta + Math.PI/2, 0); new TWEEN.Tween(cardGroup.position).to(objData.treePos, 1500).easing(TWEEN.Easing.Bounce.Out).start(); new TWEEN.Tween(cardGroup.rotation).to({x:0, y:objData.treeRot.y, z:0}, 1500).start(); new TWEEN.Tween(cardGroup.scale).to({x:CONFIG.cardScaleTree, y:CONFIG.cardScaleTree, z:CONFIG.cardScaleTree}, 1500).start(); document.getElementById('find-btn').classList.add('show'); } else { cardGroup.position.copy(data.treePos); cardGroup.rotation.copy(data.treeRot); cardGroup.scale.setScalar(CONFIG.cardScaleTree); const objData = { mesh: cardGroup, treePos: data.treePos, treeRot: data.treeRot, scatterPos: data.scatterPos, baseScale: CONFIG.cardScaleTree, phase: 0 }; allObjectsData.push(objData); } cardsGroup.add(cardGroup); }
+        function createCardTexture(e,t,r,a=null,n=1){const o=document.createElement("canvas");o.width=512,o.height=340;const i=o.getContext("2d"),s=i.createRadialGradient(256,170,50,256,170,350);s.addColorStop(0,"#1a2a1a"),s.addColorStop(1,"#020a02"),i.fillStyle=s,i.fillRect(0,0,512,340);const c=new THREE.CanvasTexture(o);c.colorSpace=THREE.SRGBColorSpace;function d(r=null){i.lineWidth=12,i.strokeStyle="#b8860b",i.strokeRect(6,6,500,328),r?(i.save(),i.beginPath(),i.arc(80,80,45,0,2*Math.PI),i.clip(),i.drawImage(r,35,35,90,90),i.restore(),i.lineWidth=4,i.strokeStyle="#FFD700",i.beginPath(),i.arc(80,80,45,0,2*Math.PI),i.stroke()):(i.save(),i.beginPath(),i.arc(80,80,45,0,2*Math.PI),i.fillStyle="#b8860b",i.fill(),i.fillStyle="#fff",i.font="bold 40px Arial",i.textAlign="center",i.fillText(t.charAt(0).toUpperCase(),80,95),i.restore()),i.fillStyle="#FFD700",i.font="bold 24px Arial",i.textAlign="left",i.shadowColor="black",i.shadowBlur=4,i.shadowOffsetX=1,i.shadowOffsetY=1,i.fillText(t,140,90),i.shadowBlur=0,i.fillStyle="#ffffff",i.font='italic bold 34px "Times New Roman", serif',i.textAlign="center",i.shadowColor="black",i.shadowBlur=6,i.shadowOffsetX=3,i.shadowOffsetY=3,function(e,t,r,a,n,o){let i=t.split(""),s="";for(let t=0;t<i.length;t++){let c=s+i[t];e.measureText(c).width>n&&t>0?(e.fillText(s,r,a),s=i[t],a+=o):s=c}e.fillText(s,r,a)}(i,e,256,180,440,48),c.needsUpdate=!0}const l=new Image;l.crossOrigin="Anonymous",l.src=`assets/art_${n}.jpg`,l.onload=()=>{i.save(),i.globalAlpha=.4,i.drawImage(l,0,0,512,340),i.restore(),h()},l.onerror=()=>{const e=new Image;e.crossOrigin="Anonymous",e.src=`art_${n}.jpg`,e.onload=()=>{i.save(),i.globalAlpha=.4,i.drawImage(e,0,0,512,340),i.restore(),h()},e.onerror=()=>{h()}};function h(){if(a){const e=new Image;e.crossOrigin="Anonymous",e.src=a,e.onload=()=>d(e),e.onerror=()=>{d(null)}}else d(null)}return c}
+        function onClick(e){if(e.target.closest("#ui-layer")||e.target.closest("#start-overlay"))return;mouse.x=e.clientX/window.innerWidth*2-1,mouse.y=-e.clientY/window.innerHeight*2+1,raycaster.setFromCamera(mouse,camera);const t=raycaster.intersectObjects(cardsGroup.children,!0);if(t.length>0){let e=t[0].object;for(;e.parent&&e.parent!==cardsGroup;)e=e.parent;currentState===STATE.HERO&&Math.abs(e.position.z-82)<5?new TWEEN.Tween(e.rotation).to({y:e.rotation.y+Math.PI},500).start():activateHeroMode(e)}}
+        function createDust() { const geo = new THREE.BufferGeometry(); const pos = []; for(let i=0; i<1000; i++) pos.push((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); dustSystem = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xffd700, size: 0.3, transparent: true, opacity: 0.5 })); mainGroup.add(dustSystem); }
+        function createGround() { const mesh = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), new THREE.MeshStandardMaterial({ color: 0x080808, roughness: 0.1, metalness: 0.5 })); mesh.rotation.x = -Math.PI/2; mesh.position.y = -CONFIG.treeHeight/2 - 5; scene.add(mesh); }
+        function onResize() { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); }
+        function animate(t) { requestAnimationFrame(animate); time += 0.01; TWEEN.update(t); controls.update(); backgroundGroup.rotation.y = time * 0.01; if(currentState === STATE.SCATTER || currentState === STATE.HERO) { allObjectsData.forEach(obj => { if(currentState === STATE.HERO && Math.abs(obj.mesh.position.z - 82) < 5) return; obj.mesh.position.y += Math.sin(time + obj.phase) * 0.05; }); } dustSystem.rotation.y = time * 0.05; composer.render(); }
         init();
     </script>
 </body>
