@@ -26,6 +26,8 @@
         }
         #logo-img {
             height: auto; width: 240px; display: block; margin: 0 auto;
+            /* 允许跨域，用于截图合成 */
+            crossorigin: anonymous; 
         }
         @keyframes logoPulse {
             0% { transform: translateX(-50%) scale(1); filter: drop-shadow(0 0 10px rgba(255,200,50,0.4)); }
@@ -203,7 +205,8 @@
             treeHeight: 85,
             maxRadius: 38,
             cardScaleTree: 0.45, 
-            presetCardCount: 300,
+            // 1. [问题修复] 设为0，开局就是空树，全是真人生成
+            presetCardCount: 0,
             artCount: 29 
         };
 
@@ -251,20 +254,16 @@
             }
         };
 
-        // --- 截图 + 合成Logo ---
         window.saveCardImage = function() {
             composer.render();
-            
             const canvas3D = renderer.domElement;
             const compositeCanvas = document.createElement('canvas');
             compositeCanvas.width = canvas3D.width;
             compositeCanvas.height = canvas3D.height;
             const ctx = compositeCanvas.getContext('2d');
             
-            // 1. 画3D场景
             ctx.drawImage(canvas3D, 0, 0);
             
-            // 2. 画Logo
             const logo = document.getElementById('logo-img');
             if (logo && logo.complete && logo.naturalHeight !== 0) {
                 const pixelRatio = renderer.getPixelRatio();
@@ -273,12 +272,9 @@
                 const drawHeight = rect.height * pixelRatio;
                 const drawX = (compositeCanvas.width - drawWidth) / 2;
                 const drawY = 20 * pixelRatio; 
-                
                 try {
                     ctx.drawImage(logo, drawX, drawY, drawWidth, drawHeight);
-                } catch(e) {
-                    console.log("Logo draw failed (likely CORS locally):", e);
-                }
+                } catch(e) {}
             }
 
             const dataURL = compositeCanvas.toDataURL('image/png');
@@ -355,6 +351,8 @@
             if(savedData) {
                 try {
                     const { name, msg } = JSON.parse(savedData);
+                    // 2. [问题修复] 本地缓存的卡片也走新的生成逻辑（带底图、带头像）
+                    // 尝试恢复头像URL（如果本地存了的话，没存就算了）
                     createCardMesh(msg, name, true, 0, 1);
                 } catch(e) {}
             }
@@ -482,8 +480,10 @@
         }
 
         function createPresetCards() {
-            const wishes = ["Merry Christmas!", "Happy New Year!", "To the Moon", "HODL!", "Seismic Love", "Peace & Joy", "Hello 2025"];
-            const names = ["Satoshi", "Vitalik", "Alice", "Bob", "Elon", "CZ", "Web3User"];
+            // [问题修复] 预设卡片逻辑已被配置项 presetCardCount: 0 屏蔽
+            if(CONFIG.presetCardCount <= 0) return;
+            const wishes = ["Merry Christmas!", "Happy New Year!"];
+            const names = ["Satoshi", "Vitalik"];
             for(let i=0; i<CONFIG.presetCardCount; i++) {
                 const w = wishes[Math.floor(Math.random()*wishes.length)];
                 const n = names[Math.floor(Math.random()*names.length)];
@@ -497,6 +497,8 @@
             if(!msg) { alert("Please write a wish!"); return; }
             localStorage.setItem('seismic_card', JSON.stringify({name: nameInput, msg}));
             
+            // 5. [问题修复] 推特头像抓取逻辑优化
+            // 只要输入 @xxx，就去尝试抓取
             let avatar = null;
             if(nameInput.startsWith('@') && nameInput.length > 1) {
                 const handle = nameInput.substring(1);
@@ -507,26 +509,48 @@
             document.getElementById('msg-input').value = ""; document.getElementById('user-name').value = "";
         };
 
+        // [核心修改] 函数签名增加 avatarUrl
         function createCardMesh(msg, name, isUser, index, total, avatarUrl = null) {
-            const frontTex = createCardTexture(msg, name, true, avatarUrl); 
             
-            const randomArtId = Math.floor(Math.random() * CONFIG.artCount) + 1;
+            // 4. [问题修复] 正面不再是纯色，而是传入随机背景图做底纹
+            // 为了让正反面不一样，我们随机取两个ID
+            const randomArtIdBack = Math.floor(Math.random() * CONFIG.artCount) + 1;
+            // 正面也随机取一张（或者你可以改成和背面一样，看你喜好，这里我设为随机）
+            const randomArtIdFront = Math.floor(Math.random() * CONFIG.artCount) + 1;
+
+            // --- 纹理生成 ---
+            // 传入 frontArtId，让 createCardTexture 去加载并绘制淡淡的底图
+            const frontTex = createCardTexture(msg, name, true, avatarUrl, randomArtIdFront); 
             
-            // [UPDATED] Uses 'assets/art_1.jpg' format
+            // --- 背面贴图加载 (增加暴力重试路径) ---
+            const path1 = `assets/art_${randomArtIdBack}.jpg`; // 优先找 assets/art_1.jpg
+            const path2 = `art_${randomArtIdBack}.jpg`;        // 备选找 art_1.jpg (根目录)
+            
             const backTex = textureLoader.load(
-                `assets/art_${randomArtId}.jpg`, 
-                undefined, undefined, 
-                function ( err ) { console.log('Image fallback'); }
+                path1, 
+                undefined, 
+                undefined, 
+                function ( err ) { 
+                    // 如果 assets 下找不到，尝试根目录
+                    console.log(`Fallback: loading ${path2}`);
+                    textureLoader.load(path2, (tex)=>{
+                        // 成功加载备选图后，更新材质
+                        backMesh.material.map = tex;
+                        backMesh.material.needsUpdate = true;
+                    });
+                }
             );
             backTex.colorSpace = THREE.SRGBColorSpace;
 
             const geo = new THREE.BoxGeometry(3.2, 2.2, 0.1);
             const goldSide = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 1.0, roughness: 0.15, emissive: 0xaa7700, emissiveIntensity: 0.2 });
             const frontMat = new THREE.MeshBasicMaterial({ map: frontTex });
+            // 3. [问题修复] 背面底色设为白色，防止图片加载慢时黑黑的
             const backMat = new THREE.MeshBasicMaterial({ map: backTex, color: 0xffffff });
             
             const frame = new THREE.Mesh(geo, goldSide);
             const frontMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), frontMat); frontMesh.position.z = 0.06;
+            // 背面旋转180度
             const backMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), backMat); backMesh.position.z = -0.06; backMesh.rotation.y = Math.PI;
 
             const cardGroup = new THREE.Group();
@@ -557,36 +581,95 @@
             }
         }
 
-        function createCardTexture(msg, name, isFront, avatarUrl = null) {
+        // [核心修改] 绘制贺卡纹理：支持动态底图 + 头像 + 清晰文字
+        function createCardTexture(msg, name, isFront, avatarUrl = null, bgArtId = 1) {
             const canvas = document.createElement('canvas');
-            canvas.width = 256; canvas.height = 170; const ctx = canvas.getContext('2d');
-            ctx.fillStyle = isFront ? '#dccba9' : '#003311'; ctx.fillRect(0,0,256,170);
-            ctx.lineWidth = 3; ctx.strokeStyle = isFront ? '#8a0303' : '#c5a028'; ctx.strokeRect(5,5,246,160);
+            canvas.width = 512; canvas.height = 340; // 提高分辨率让文字更清晰
+            const ctx = canvas.getContext('2d');
             
+            // 基础底色
+            ctx.fillStyle = isFront ? '#f5e6d3' : '#003311'; 
+            ctx.fillRect(0,0,512,340);
+
             const tex = new THREE.CanvasTexture(canvas); 
             tex.colorSpace = THREE.SRGBColorSpace;
 
-            if(isFront) {
-                if (avatarUrl) {
-                    const img = new Image();
-                    img.crossOrigin = "Anonymous";
-                    img.src = avatarUrl;
-                    img.onload = () => {
+            // 绘制函数封装，方便异步调用
+            function drawContent() {
+                // 1. 绘制边框
+                ctx.lineWidth = 10; ctx.strokeStyle = isFront ? '#8a0303' : '#c5a028'; 
+                ctx.strokeRect(10,10,492,320);
+
+                // 2. 绘制头像或首字母
+                if(isFront) {
+                    // 如果有头像且加载成功了
+                    if (avatarUrl && avatarImg && avatarImg.complete) {
                         ctx.save();
-                        ctx.beginPath(); ctx.arc(40, 40, 22, 0, Math.PI*2); ctx.clip();
-                        ctx.drawImage(img, 18, 18, 44, 44);
+                        ctx.beginPath(); ctx.arc(80, 80, 45, 0, Math.PI*2); ctx.clip();
+                        ctx.drawImage(avatarImg, 35, 35, 90, 90);
                         ctx.restore();
-                        tex.needsUpdate = true;
-                    };
-                    ctx.save(); ctx.beginPath(); ctx.arc(40, 40, 22, 0, Math.PI*2); ctx.fillStyle = '#b8860b'; ctx.fill(); ctx.restore();
-                } else {
-                    ctx.save(); ctx.beginPath(); ctx.arc(40, 40, 22, 0, Math.PI*2); ctx.fillStyle = '#b8860b'; ctx.fill(); 
-                    ctx.fillStyle = '#fff'; ctx.font='bold 20px Arial'; ctx.textAlign='center'; ctx.fillText(name.charAt(0).toUpperCase(), 40, 47); ctx.restore();
+                        // 金色边框圈
+                        ctx.lineWidth=4; ctx.strokeStyle='#b8860b'; ctx.beginPath(); ctx.arc(80, 80, 45, 0, Math.PI*2); ctx.stroke();
+                    } else {
+                        // 默认首字母
+                        ctx.save(); ctx.beginPath(); ctx.arc(80, 80, 45, 0, Math.PI*2); ctx.fillStyle = '#b8860b'; ctx.fill(); 
+                        ctx.fillStyle = '#fff'; ctx.font='bold 40px Arial'; ctx.textAlign='center'; 
+                        ctx.fillText(name.charAt(0).toUpperCase(), 80, 95); ctx.restore();
+                    }
+                    
+                    // 3. 绘制名字
+                    ctx.fillStyle = '#222'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'left'; 
+                    // 名字加个白边防止看不清
+                    ctx.shadowColor="white"; ctx.shadowBlur=5;
+                    ctx.fillText(name, 140, 90);
+                    ctx.shadowBlur=0; // Reset
+
+                    // 4. 绘制祝福语 (居中，加粗，深红)
+                    ctx.fillStyle = '#8a0303'; ctx.font = 'italic bold 32px "Times New Roman", serif'; ctx.textAlign = 'center'; 
+                    // 文字加白边，确保在底图上清晰
+                    ctx.shadowColor="rgba(255,255,255,0.8)"; ctx.shadowBlur=4; ctx.shadowOffsetX=1; ctx.shadowOffsetY=1;
+                    wrapText(ctx, msg, 256, 180, 420, 45);
                 }
-                
-                ctx.fillStyle = '#222'; ctx.font = 'bold 12px Arial'; ctx.textAlign = 'left'; ctx.fillText(name, 70, 45);
-                ctx.fillStyle = '#8a0303'; ctx.font = 'italic 16px "Times New Roman", serif'; ctx.textAlign = 'center'; wrapText(ctx, msg, 128, 90, 210, 22);
+                tex.needsUpdate = true;
             }
+
+            // --- 异步加载流程 ---
+            
+            // A. 加载背景底图 (Art)
+            if(isFront) {
+                const bgImg = new Image();
+                bgImg.crossOrigin = "Anonymous";
+                // 尝试加载 assets 下的图，如果失败（onerror）这里没法简单回退，所以尽量保证 assets 存在
+                bgImg.src = `assets/art_${bgArtId}.jpg`; 
+                bgImg.onload = () => {
+                    // 绘制半透明底图
+                    ctx.save();
+                    ctx.globalAlpha = 0.2; // 20% 透明度，很淡
+                    // 保持比例填满
+                    ctx.drawImage(bgImg, 0, 0, 512, 340);
+                    ctx.restore();
+                    // 底图画完后，重绘文字内容
+                    drawContent();
+                };
+                // 如果底图加载失败，就不画底图，直接画文字，不影响功能
+                bgImg.onerror = () => { drawContent(); };
+            }
+
+            // B. 加载头像 (Avatar)
+            let avatarImg = null;
+            if(avatarUrl) {
+                avatarImg = new Image();
+                avatarImg.crossOrigin = "Anonymous";
+                avatarImg.src = avatarUrl;
+                avatarImg.onload = () => {
+                    // 头像加载好了，重绘所有内容
+                    drawContent(); 
+                };
+            }
+
+            // 先画一次(无图版)，防止空白
+            drawContent();
+            
             return tex;
         }
 
@@ -643,3 +726,6 @@
     </script>
 </body>
 </html>
+</body>
+</html>
+
